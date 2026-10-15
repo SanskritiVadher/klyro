@@ -1,0 +1,861 @@
+/* ==============================================================================
+   KLYRO — PERSONAL FINANCIAL INTELLIGENCE THEME
+   Official Tagline: "Clarity you can act on."
+   ============================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Surface Tokens */
+  --surface-parchment: #FBF9F5;
+  --surface-paper: #FFFFFF;
+  --surface-paper-subtle: #F6F3EB;
+  --surface-paper-hover: #EFEBE0;
+  --surface-card: #FFFFFF;
+  --surface-dark-ink: #191614;
+
+  /* Line & Border Tokens */
+  --border-warm: #E6E1D6;
+  --border-strong: #D5CEBF;
+  --border-focus: #1A1816;
+
+  /* Text & Ink Tokens */
+  --text-ink: #1C1917;
+  --text-body: #44403C;
+  --text-muted: #78716C;
+  --text-subtle: #A8A29E;
+  --text-inverted: #FAF8F5;
+
+  /* Editorial Accent Colors */
+  --coral-primary: #D45644;
+  --coral-hover: #BD4534;
+  --coral-subtle: #FDEDE8;
+  --coral-border: #F7C6BE;
+
+  --marigold-accent: #D97706;
+  --marigold-subtle: #FEF3C7;
+  --marigold-border: #FCD34D;
+
+  --sage-positive: #2D7A58;
+  --sage-subtle: #ECFDF5;
+  --sage-border: #A7F3D0;
+
+  --terracotta-warning: #B84A39;
+  --terracotta-subtle: #FEF2F2;
+  --terracotta-border: #FECACA;
+
+  --navy-neutral: #1E293B;
+
+  /* Typography Scale */
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Tactile Shadows */
+  --shadow-subtle: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-card: 0 2px 4px rgba(28, 25, 23, 0.04), 0 1px 2px rgba(28, 25, 23, 0.02);
+  --shadow-elevated: 0 8px 24px rgba(28, 25, 23, 0.08), 0 2px 6px rgba(28, 25, 23, 0.04);
+  --shadow-drawer: -4px 0 28px rgba(28, 25, 23, 0.12);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Base Reset & Foundation */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--surface-parchment);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Tabular Numerals for Financial Data */
+.tabular-nums, .num, [data-currency] {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Serif Display Typography */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Paper Cards & Containers */
+.paper-card {
+  background-color: var(--surface-paper);
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+}
+
+.paper-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.06), 0 1px 3px rgba(28, 25, 23, 0.03);
+}
+
+.paper-card-subtle {
+  background-color: var(--surface-paper-subtle);
+  border: 1px solid var(--border-warm);
+  border-radius: 8px;
+}
+
+/* Tactile Editorial Header Lines */
+.editorial-rule {
+  border-top: 1px solid var(--border-warm);
+  position: relative;
+}
+
+.editorial-rule::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Navigation Rail Active State */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  background-color: var(--surface-paper-hover);
+  color: var(--text-ink);
+}
+
+.nav-link.active {
+  background-color: var(--surface-dark-ink);
+  color: var(--text-inverted);
+  font-weight: 600;
+}
+
+.nav-link.active svg {
+  stroke: var(--text-inverted);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  outline: none;
+  text-decoration: none;
+}
+
+.btn:focus-visible {
+  ring: 2px solid var(--text-ink);
+  ring-offset: 2px;
+}
+
+.btn-coral {
+  background-color: var(--coral-primary);
+  color: #FFFFFF;
+}
+
+.btn-coral:hover {
+  background-color: var(--coral-hover);
+  box-shadow: 0 2px 8px rgba(212, 86, 68, 0.25);
+}
+
+.btn-secondary {
+  background-color: var(--surface-paper);
+  color: var(--text-ink);
+  border-color: var(--border-warm);
+}
+
+.btn-secondary:hover {
+  background-color: var(--surface-paper-subtle);
+  border-color: var(--border-strong);
+}
+
+.btn-subtle {
+  background-color: transparent;
+  color: var(--text-muted);
+}
+
+.btn-subtle:hover {
+  background-color: var(--surface-paper-hover);
+  color: var(--text-ink);
+}
+
+/* Status Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-sage {
+  background-color: var(--sage-subtle);
+  color: var(--sage-positive);
+  border: 1px solid var(--sage-border);
+}
+
+.badge-marigold {
+  background-color: var(--marigold-subtle);
+  color: var(--marigold-accent);
+  border: 1px solid var(--marigold-border);
+}
+
+.badge-terracotta {
+  background-color: var(--terracotta-subtle);
+  color: var(--terracotta-warning);
+  border: 1px solid var(--terracotta-border);
+}
+
+.badge-neutral {
+  background-color: var(--surface-paper-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-warm);
+}
+
+/* Money Weather Signature Banner */
+.weather-banner {
+  border-radius: 12px;
+  padding: 20px 24px;
+  border: 1px solid var(--border-warm);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.weather-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.weather-comfortable {
+  background: linear-gradient(135deg, #F9FDFB 0%, #F0FDF4 100%);
+  border-color: #BBEFCE;
+}
+.weather-comfortable::before {
+  background-color: var(--sage-positive);
+}
+
+.weather-tightening {
+  background: linear-gradient(135deg, #FFFDF7 0%, #FEF8E7 100%);
+  border-color: #FDE68A;
+}
+.weather-tightening::before {
+  background-color: var(--marigold-accent);
+}
+
+.weather-at-risk {
+  background: linear-gradient(135deg, #FFFDFD 0%, #FEF2F2 100%);
+  border-color: #FECACA;
+}
+.weather-at-risk::before {
+  background-color: var(--terracotta-warning);
+}
+
+/* Modals & Slide-over Drawers */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(26, 24, 22, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: var(--surface-paper);
+  border: 1px solid var(--border-warm);
+  border-radius: 12px;
+  box-shadow: var(--shadow-elevated);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out;
+}
+
+.modal-backdrop.open .modal-content {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Form Controls */
+.form-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-ink);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: var(--surface-paper);
+  border: 1px solid var(--border-warm);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--text-ink);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--text-ink);
+  box-shadow: 0 0 0 1px var(--text-ink);
+}
+
+/* Table Ledger Styling */
+.ledger-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ledger-table th {
+  background-color: var(--surface-paper-subtle);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-warm);
+}
+
+.ledger-table td {
+  padding: 14px 16px;
+  font-size: 0.875rem;
+  color: var(--text-body);
+  border-bottom: 1px solid var(--border-warm);
+  transition: background-color var(--transition-fast);
+}
+
+.ledger-table tr:hover td {
+  background-color: var(--surface-paper-subtle);
+}
+
+/* Toast Container */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  padding: 12px 18px;
+  background-color: var(--surface-dark-ink);
+  color: var(--text-inverted);
+  border-radius: 8px;
+  box-shadow: var(--shadow-elevated);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastIn 200ms ease-out forwards;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Page View Transitions */
+.view-enter {
+  animation: viewFadeSlide 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes viewFadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Staggered Card Pop-In / Fade-Up: Default to opacity 1 so content is never blank */
+.fade-up-card {
+  opacity: 1;
+  animation: cardPopIn 400ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.delay-1 { animation-delay: 50ms; }
+.delay-2 { animation-delay: 100ms; }
+.delay-3 { animation-delay: 150ms; }
+.delay-4 { animation-delay: 200ms; }
+.delay-5 { animation-delay: 250ms; }
+/* ==============================================================================
+   KLYRO — VIBRANT LIVING MOTION SYSTEM
+   Ambient blobs, 3D card tilt, spring modals, lightning & spinning weather,
+   staggered shimmer sweeps, and rupee count-up bounces.
+   ============================================================================== */
+
+/* 1. Animated Ambient Gradient Blobs */
+.ambient-blob-stage {
+  filter: blur(60px);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.ambient-blob {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.blob-coral {
+  width: 440px;
+  height: 440px;
+  background: radial-gradient(circle, rgba(212, 86, 68, 0.18) 0%, rgba(212, 86, 68, 0) 70%);
+  top: -80px;
+  right: -80px;
+  animation: drift-coral 18s ease-in-out infinite alternate;
+}
+
+.blob-sage {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(45, 122, 88, 0.14) 0%, rgba(45, 122, 88, 0) 70%);
+  bottom: -100px;
+  left: 5%;
+  animation: drift-sage 22s ease-in-out infinite alternate;
+}
+
+.blob-ivory {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(217, 119, 6, 0.13) 0%, rgba(217, 119, 6, 0) 70%);
+  top: 30%;
+  left: 40%;
+  animation: drift-ivory 16s ease-in-out infinite alternate;
+}
+
+@keyframes drift-coral {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-70px, 90px) scale(1.15); }
+  100% { transform: translate(-140px, 40px) scale(0.92); }
+}
+
+@keyframes drift-sage {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(90px, -70px) scale(1.12); }
+  100% { transform: translate(40px, -130px) scale(0.95); }
+}
+
+@keyframes drift-ivory {
+  0% { transform: translate(0, 0) scale(0.9); }
+  50% { transform: translate(-60px, -50px) scale(1.18); }
+  100% { transform: translate(80px, 60px) scale(1); }
+}
+
+/* 2. Page & Card Pop-In Animations (Scale 0.95 -> 1 with Stagger) */
+.view-enter {
+  animation: viewSlideFadeIn 340ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes viewSlideFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fade-up-card {
+  opacity: 1;
+  animation: cardPopIn 400ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes cardPopIn {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.delay-1 { animation-delay: 40ms; }
+.delay-2 { animation-delay: 80ms; }
+.delay-3 { animation-delay: 130ms; }
+.delay-4 { animation-delay: 180ms; }
+.delay-5 { animation-delay: 240ms; }
+.delay-6 { animation-delay: 300ms; }
+
+/* 3. Paper Cards Glowing Coral Border & 3D Tilt on Hover */
+.paper-card {
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.paper-card:hover {
+  border-color: rgba(212, 86, 68, 0.5) !important;
+  box-shadow: 0 14px 30px -8px rgba(212, 86, 68, 0.16), 0 4px 12px -2px rgba(28, 25, 23, 0.05);
+  transform: translateY(-2px);
+}
+
+/* 4. Money Weather Hero Card Gentle Floating & Animated SVGs */
+.weather-banner {
+  opacity: 1 !important;
+  animation: heroCardFloat 7s ease-in-out infinite;
+}
+
+@keyframes heroCardFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.weather-sun-rays {
+  animation: weatherSunRotate 20s linear infinite;
+  transform-origin: 32px 32px;
+}
+
+@keyframes weatherSunRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.weather-sun-glow {
+  animation: weatherSunPulse 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes weatherSunPulse {
+  0% { transform: scale(0.94); opacity: 0.5; }
+  100% { transform: scale(1.08); opacity: 0.85; }
+}
+
+.weather-cloud-drift {
+  animation: weatherCloudDriftAnim 5s ease-in-out infinite alternate;
+}
+
+.weather-cloud-drift-slow {
+  animation: weatherCloudDriftSlowAnim 8s ease-in-out infinite alternate;
+}
+
+@keyframes weatherCloudDriftAnim {
+  0% { transform: translateX(-4px); }
+  100% { transform: translateX(6px); }
+}
+
+@keyframes weatherCloudDriftSlowAnim {
+  0% { transform: translateX(5px); }
+  100% { transform: translateX(-6px); }
+}
+
+.weather-rain-drop {
+  animation: weatherRainFall 1s ease-in infinite;
+}
+
+.weather-rain-drop.drop-1 { animation-delay: 0ms; }
+.weather-rain-drop.drop-2 { animation-delay: 240ms; }
+.weather-rain-drop.drop-3 { animation-delay: 480ms; }
+.weather-rain-drop.drop-4 { animation-delay: 720ms; }
+
+@keyframes weatherRainFall {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Lightning Bolt Flash for At Risk Weather */
+.weather-lightning {
+  animation: lightningFlicker 4s infinite;
+}
+
+@keyframes lightningFlicker {
+  0%, 88%, 94%, 97%, 100% {
+    opacity: 0;
+  }
+  90%, 95% {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px #F59E0B);
+  }
+}
+
+/* 5. Rupee Number Bounce on Count-Up Completion */
+@keyframes numberBounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.09); }
+  75% { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+.number-bounce {
+  display: inline-block;
+  animation: numberBounce 360ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 6. Budget Pulse Bars: Shimmer Sweep, Pacing Marker, and Over-Pace Wobble */
+@keyframes shimmerSweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.shimmer-sweep-layer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
+  animation: shimmerSweep 2.2s infinite ease-in-out;
+}
+
+@keyframes barWobble {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
+.bar-wobble {
+  animation: barWobble 480ms ease-in-out 350ms 1 normal both;
+}
+
+/* 7. Sidebar: Active Sliding Coral Pill & Icon Bounce */
+.nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 180ms ease, background-color 180ms ease;
+  overflow: hidden;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 4px;
+  background-color: var(--coral-primary);
+  border-radius: 0 4px 4px 0;
+  opacity: 0;
+  transform: scaleY(0.2);
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease;
+}
+
+.nav-link.active {
+  color: var(--text-ink);
+  background-color: #EFEBE0;
+  font-weight: 600;
+}
+
+.nav-link.active::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-4px) scale(1.15); }
+  65% { transform: translateY(1px) scale(0.98); }
+}
+
+.nav-link:hover svg {
+  animation: iconBounce 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: var(--coral-primary);
+}
+
+/* 8. Quick Capture Modal Spring-In Animation */
+@keyframes modalSpringIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(24px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.02) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-backdrop.open .modal-content {
+  animation: modalSpringIn 340ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 9. Upcoming Commitments Slide-In from Right & Pulsing Dot */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.commitment-item {
+  animation: slideInRight 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pulsing-dot-urgent {
+  animation: softPulseUrgent 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes softPulseUrgent {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(212, 86, 68, 0.7);
+  }
+  70% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 7px rgba(212, 86, 68, 0);
+  }
+  100% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(212, 86, 68, 0);
+  }
+}
+
+/* 10. Shimmer Skeleton Wave */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #F6F3EB 25%, #ECE7DB 50%, #F6F3EB 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 11. Circular Progress Rings */
+.progress-ring-circle {
+  transition: stroke-dashoffset 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* 12. Checkmark Delight Animation */
+.checkmark-check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: checkmarkStroke 300ms cubic-bezier(0.16, 1, 0.3, 1) 150ms forwards;
+}
+
+@keyframes checkmarkStroke {
+  100% { stroke-dashoffset: 0; }
+}
+
+/* Accessibility: Reduced-Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ambient-blob,
+  .weather-banner,
+  .weather-sun-rays,
+  .weather-sun-glow,
+  .weather-cloud-drift,
+  .weather-cloud-drift-slow,
+  .weather-rain-drop,
+  .weather-lightning,
+  .pulsing-dot-urgent,
+  .skeleton-shimmer,
+  .fade-up-card,
+  .view-enter,
+  .shimmer-sweep-layer,
+  .bar-wobble,
+  .number-bounce,
+  .commitment-item {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .paper-card:hover {
+    transform: none !important;
+  }
+}
+

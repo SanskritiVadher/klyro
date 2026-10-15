@@ -1,0 +1,433 @@
+{
+  "info": {
+    "_postman_id": "9b12a84c-c340-4284-82a1-fae60938bf01",
+    "name": "Klyro Financial Studio API",
+    "description": "Production-grade REST API collection for Klyro Personal Financial Intelligence Studio.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8081",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System & Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sanskriti@klyro.finance\",\n  \"password\": \"DemoPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Money Weather",
+      "item": [
+        {
+          "name": "Get Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard?period=2026-10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "2026-10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Money Weather Forecast",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/money-weather?start_date=2026-10-01&end_date=2026-10-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "money-weather"],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2026-10-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "List Transactions (Paginated)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions?start_date=2026-10-01&end_date=2026-10-31&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions"],
+              "query": [
+                { "key": "start_date", "value": "2026-10-01" },
+                { "key": "end_date", "value": "2026-10-31" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Record Expense (Success Case)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_id\": 1,\n  \"category_id\": 1,\n  \"transaction_type\": \"expense\",\n  \"amount_minor\": 125000,\n  \"currency\": \"INR\",\n  \"merchant\": \"Modern Bazaar\",\n  \"description\": \"Fresh groceries and provisions\",\n  \"transaction_date\": \"2026-10-15\",\n  \"payment_method\": \"upi\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions"]
+            }
+          }
+        },
+        {
+          "name": "Record Transfer (Two-Legged Atomic)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from_account_id\": 1,\n  \"to_account_id\": 3,\n  \"amount_minor\": 200000,\n  \"transaction_date\": \"2026-10-15\",\n  \"description\": \"Wallet Top-Up from Salary Account\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/transfers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions", "transfers"]
+            }
+          }
+        },
+        {
+          "name": "Record Expense - Validation Failure (Amount <= 0)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_id\": 1,\n  \"category_id\": 1,\n  \"transaction_type\": \"expense\",\n  \"amount_minor\": -500,\n  \"transaction_date\": \"2026-10-15\",\n  \"payment_method\": \"upi\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "item": [
+        {
+          "name": "List Accounts with Computed Balances",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts"]
+            }
+          }
+        },
+        {
+          "name": "Account Balance Adjustment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_balance_minor\": 500000,\n  \"notes\": \"Physical cash wallet recount\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/5/adjustments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "5", "adjustments"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Budgets",
+      "item": [
+        {
+          "name": "List Budgets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/budgets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "budgets"]
+            }
+          }
+        },
+        {
+          "name": "Get Budget Performance",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/budgets/1/performance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "budgets", "1", "performance"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Goals",
+      "item": [
+        {
+          "name": "List Goals with Momentum",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/goals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "goals"]
+            }
+          }
+        },
+        {
+          "name": "Contribute to Goal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_minor\": 1000000,\n  \"contribution_date\": \"2026-10-15\",\n  \"contribution_type\": \"deposit\",\n  \"notes\": \"Bonus allocation to emergency fund\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/goals/1/contributions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "goals", "1", "contributions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recurring & Calendar",
+      "item": [
+        {
+          "name": "List Recurring Rules",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/recurring-rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "recurring-rules"]
+            }
+          }
+        },
+        {
+          "name": "Get Upcoming Commitments Radar",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calendar/upcoming?days=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "calendar", "upcoming"],
+              "query": [
+                { "key": "days", "value": "30" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics & Insights",
+      "item": [
+        {
+          "name": "Spending by Category",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytics/spending-by-category?start_date=2026-10-01&end_date=2026-10-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analytics", "spending-by-category"]
+            }
+          }
+        },
+        {
+          "name": "Cash Flow Trends",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytics/cash-flow",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analytics", "cash-flow"]
+            }
+          }
+        },
+        {
+          "name": "Spending DNA Insights",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytics/insights",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analytics", "insights"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Data Management & Settings",
+      "item": [
+        {
+          "name": "Export Transactions CSV",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/export/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "export", "transactions"]
+            }
+          }
+        },
+        {
+          "name": "Export Full JSON Backup",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/export/backup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "export", "backup"]
+            }
+          }
+        },
+        {
+          "name": "Get Studio Settings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Update Studio Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"default_currency\": \"INR\",\n  \"financial_year_start\": \"4\",\n  \"safe_to_spend_buffer_pct\": \"10\",\n  \"timezone\": \"Asia/Kolkata\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Re-seed Demo Data",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/management/reseed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "management", "reseed"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
