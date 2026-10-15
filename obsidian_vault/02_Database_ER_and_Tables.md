@@ -221,4 +221,25 @@ Key-value user settings store for configurable preferences (cushion buffer %, th
 
 ---
 
+## 4. Deep-Dive: SQLite "Type Affinity" vs PostgreSQL Native Types
+
+A common technical question is:  
+> *"SQLite only has 5 storage classes (`NULL`, `INTEGER`, `REAL`, `TEXT`, `BLOB`). How does Klyro have `VARCHAR`, `BOOLEAN`, and `DATETIME` in SQLite?"*
+
+### The Secret: SQLite's Dynamic Type Affinity
+Unlike strict databases, SQLite allows **any type string** in `CREATE TABLE`. It then uses internal **Type Affinity Rules** to map those names to its 5 storage classes:
+
+| SQLAlchemy Model Type | SQLite DDL Displayed | SQLite Internal Affinity | How Data is Physically Stored |
+| :--- | :--- | :--- | :--- |
+| `sa.String(100)` | `VARCHAR(100)` | **`TEXT`** (Rule 2: contains "CHAR") | UTF-8 text string |
+| `sa.Boolean` | `BOOLEAN` | **`NUMERIC` / `INTEGER`** (Rule 5) | `0` for `False`, `1` for `True` |
+| `sa.DateTime` | `DATETIME` | **`NUMERIC` / `TEXT`** (Rule 5) | ISO-8601 string (`'2026-10-15 17:32:53'`) |
+| `sa.BigInteger` | `BIGINT` | **`INTEGER`** (Rule 1: contains "INT") | 64-bit integer paise (1 to 8 bytes) |
+
+### Why This Dual-Engine Strategy is Powerful:
+1. **In Production (Neon PostgreSQL):** Postgres compiles these directly into native PostgreSQL data types (`character varying(100)`, native `boolean`, `timestamp with time zone`, and 64-bit `bigint`).
+2. **In Local Development (SQLite `kosh.db`):** SQLite preserves the exact same descriptive schema names for developer clarity, while storing the bytes efficiently using its internal affinity system.
+
+---
+
 [[03_API_Specification|Next: 03. API Specification & HTTP Methods →]]
