@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klyro — Technical Presentation Slide Deck</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FBF9F5; color: #1C1917; }
+    h1, h2, h3, .font-serif { font-family: 'Fraunces', Georgia, serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .slide { display: none; min-height: 85vh; }
+    .slide.active { display: flex; }
+    @media print {
+      body { background: white; }
+      .slide { display: flex !important; page-break-after: always; min-height: 100vh; margin-bottom: 2rem; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="flex flex-col justify-between min-h-screen p-6 md:p-12 select-none">
+
+  <!-- Top Navigation Bar -->
+  <header class="flex items-center justify-between border-b border-[#E6E1D6] pb-4 mb-6 no-print">
+    <div class="flex items-center gap-3">
+      <span class="px-2.5 py-1 rounded bg-[#FDEDE8] text-[#D45644] font-mono text-xs font-bold tracking-wider uppercase">Klyro Architecture</span>
+      <span class="text-sm text-[#78716C]">Technical Presentation (7–8 Mins)</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span id="slide-counter" class="font-mono text-sm font-semibold text-[#1C1917]">1 / 10</span>
+      <div class="flex gap-1">
+        <button id="prev-btn" class="px-3 py-1 rounded border border-[#E6E1D6] hover:bg-white text-sm">←</button>
+        <button id="next-btn" class="px-3 py-1 rounded bg-[#D45644] text-white hover:bg-[#BD4534] text-sm">Next →</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- SLIDES CONTAINER -->
+  <main class="flex-1 flex flex-col justify-center max-w-6xl mx-auto w-full">
+
+    <!-- SLIDE 1 -->
+    <section class="slide active flex-col justify-center space-y-8">
+      <div>
+        <span class="px-3 py-1 rounded-full bg-[#FDEDE8] text-[#D45644] font-mono text-xs font-bold">⚡ PRODUCTION SYSTEM</span>
+        <h1 class="text-6xl md:text-7xl font-bold mt-4 tracking-tight">KLYRO</h1>
+        <p class="text-2xl font-serif text-[#D45644] mt-2">Personal Financial Intelligence Workspace</p>
+        <p class="text-sm font-mono text-[#2D7A58] mt-1">Live URL: https://klyro-iota.vercel.app</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl shadow-sm">
+          <p class="text-2xl font-bold text-[#D45644] font-mono">₹0.00 DRIFT</p>
+          <p class="text-sm text-[#78716C] mt-1">Integer Paise Precision</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl shadow-sm">
+          <p class="text-2xl font-bold text-[#2D7A58] font-mono">0 BUILD STEPS</p>
+          <p class="text-sm text-[#78716C] mt-1">Vanilla ES Modules</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl shadow-sm">
+          <p class="text-2xl font-bold text-[#D97706] font-mono">42 ENDPOINTS</p>
+          <p class="text-sm text-[#78716C] mt-1">FastAPI + Pydantic v2</p>
+        </div>
+      </div>
+      <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl">
+        <p class="text-xs font-mono font-bold text-[#78716C] uppercase tracking-wider mb-2">Team Members</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm font-semibold">
+          <div>• [Member 1 Name]<br><span class="text-xs text-[#78716C] font-mono">Roll: [Roll No 1]</span></div>
+          <div>• [Member 2 Name]<br><span class="text-xs text-[#78716C] font-mono">Roll: [Roll No 2]</span></div>
+          <div>• [Member 3 Name]<br><span class="text-xs text-[#78716C] font-mono">Roll: [Roll No 3]</span></div>
+          <div>• [Member 4 Name]<br><span class="text-xs text-[#78716C] font-mono">Roll: [Roll No 4]</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 -->
+    <section class="slide flex-col justify-center space-y-6">
+      <span class="text-xs font-mono font-bold text-[#D45644] uppercase tracking-wider">Why Klyro?</span>
+      <h2 class="text-4xl font-bold">The Problem vs. The Klyro Solution</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <div class="bg-[#FDEDE8]/60 border border-[#D45644]/30 p-6 rounded-2xl space-y-4">
+          <p class="font-bold text-[#D45644] text-lg font-mono">⚠️ THE PROBLEM</p>
+          <div>
+            <p class="font-serif font-bold text-lg">Floating-Point Drift</p>
+            <p class="text-sm text-[#78716C]">0.1 + 0.2 = 0.30000000000000004 destroys financial trust and balance accuracy.</p>
+          </div>
+          <div>
+            <p class="font-serif font-bold text-lg">Opaque Discretionary Cash</p>
+            <p class="text-sm text-[#78716C]">Budgeters cannot answer: "Can I safely spend ₹500 today without missing rent next week?"</p>
+          </div>
+          <div>
+            <p class="font-serif font-bold text-lg">Sluggish Frontend Bloat</p>
+            <p class="text-sm text-[#78716C]">Heavy React/Next bundles slow down mobile load times and consume high RAM.</p>
+          </div>
+        </div>
+        <div class="bg-[#ECFDF5]/60 border border-[#2D7A58]/30 p-6 rounded-2xl space-y-4">
+          <p class="font-bold text-[#2D7A58] text-lg font-mono">✨ THE KLYRO SOLUTION</p>
+          <div>
+            <p class="font-serif font-bold text-lg">100% Integer Paise Math</p>
+            <p class="text-sm text-[#78716C]">All currency modeled in 64-bit integer paise (₹500 = 50,000 paise). Zero drift.</p>
+          </div>
+          <div>
+            <p class="font-serif font-bold text-lg">Explainable Safe-to-Spend</p>
+            <p class="text-sm text-[#78716C]">Algorithmic runway deduction protecting upcoming bills and a 10% safety cushion.</p>
+          </div>
+          <div>
+            <p class="font-serif font-bold text-lg">Zero-Build Native Frontend</p>
+            <p class="text-sm text-[#78716C]">Browser-native Vanilla ES Modules + Tailwind CDN. Instant load on any mobile device.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 -->
+    <section class="slide flex-col justify-center space-y-6">
+      <span class="text-xs font-mono font-bold text-[#D45644] uppercase tracking-wider">Architecture</span>
+      <h2 class="text-4xl font-bold">Modern Decoupled Technical Stack</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+        <div class="bg-white border border-[#E6E1D6] p-6 rounded-2xl space-y-3">
+          <p class="text-xs font-mono font-bold text-[#2D7A58] uppercase">1. Client Layer</p>
+          <p class="font-serif font-bold text-xl">Browser-Native UI</p>
+          <ul class="text-sm space-y-2 text-[#44403C]">
+            <li>• Vanilla ES2022+ Modules</li>
+            <li>• Tailwind CSS CDN Theme</li>
+            <li>• Chart.js Visualizations</li>
+            <li>• Canvas Confetti Micro-Delight</li>
+          </ul>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-6 rounded-2xl space-y-3">
+          <p class="text-xs font-mono font-bold text-[#D45644] uppercase">2. API & Logic</p>
+          <p class="font-serif font-bold text-xl">FastAPI 0.115 Engine</p>
+          <ul class="text-sm space-y-2 text-[#44403C]">
+            <li>• Asynchronous Python ASGI</li>
+            <li>• Pydantic v2 Type Safety</li>
+            <li>• Financial Calculation Engine</li>
+            <li>• Bcrypt & Stateless JWT Auth</li>
+          </ul>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-6 rounded-2xl space-y-3">
+          <p class="text-xs font-mono font-bold text-[#D97706] uppercase">3. Persistence</p>
+          <p class="font-serif font-bold text-xl">Dual-Engine DB</p>
+          <ul class="text-sm space-y-2 text-[#44403C]">
+            <li>• Neon Serverless PostgreSQL (Prod)</li>
+            <li>• SQLite kosh.db (Local Dev)</li>
+            <li>• SQLAlchemy 2.0 ORM</li>
+            <li>• Alembic Schema Migrations</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4 -->
+    <section class="slide flex-col justify-center space-y-6">
+      <span class="text-xs font-mono font-bold text-[#D45644] uppercase tracking-wider">Data Modeling</span>
+      <h2 class="text-4xl font-bold">Database ER Architecture & Rules</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <div class="bg-white border border-[#E6E1D6] p-6 rounded-2xl space-y-3 font-mono text-xs">
+          <p class="font-bold text-[#D45644] text-sm uppercase">Relational Schema (10 Tables)</p>
+          <p>users (1) ───────────&lt; accounts (N)<br>
+          users (1) ───────────&lt; categories (N)<br>
+          users (1) ───────────&lt; transactions (N)<br>
+          accounts (1) ────────&lt; transactions (N)<br>
+          categories (1) ──────&lt; transactions (N)<br>
+          users (1) ───────────&lt; budgets (N) ───&lt; budget_allocations (N)<br>
+          users (1) ───────────&lt; recurring_rules (N)<br>
+          users (1) ───────────&lt; goals (N) ─────&lt; goal_contributions (N)<br>
+          transactions (1) ────&lt; transactions (1) [Atomic Transfer Legs]</p>
+        </div>
+        <div class="space-y-4">
+          <div class="bg-[#FDEDE8] border border-[#D45644]/30 p-4 rounded-xl">
+            <p class="font-bold text-sm text-[#D45644] font-mono">RULE 1: INTEGER PAISE</p>
+            <p class="text-xs text-[#1C1917] mt-1">Every monetary column is 64-bit BIGINT paise. ₹500 is stored as 50000. Floats are banned.</p>
+          </div>
+          <div class="bg-[#ECFDF5] border border-[#2D7A58]/30 p-4 rounded-xl">
+            <p class="font-bold text-sm text-[#2D7A58] font-mono">RULE 2: ATOMIC TRANSFERS</p>
+            <p class="text-xs text-[#1C1917] mt-1">Moving money generates two synchronized rows sharing a UUID. Both commit together or roll back.</p>
+          </div>
+          <div class="bg-[#FEF3C7] border border-[#D97706]/30 p-4 rounded-xl">
+            <p class="font-bold text-sm text-[#D97706] font-mono">RULE 3: RESERVE SHIELD</p>
+            <p class="text-xs text-[#1C1917] mt-1">is_reserve = True marks emergency funds, programmatically excluding them from spendable cash.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5 -->
+    <section class="slide flex-col justify-center space-y-4">
+      <span class="text-xs font-mono font-bold text-[#D45644] uppercase tracking-wider">Database Schema</span>
+      <h2 class="text-4xl font-bold">10 Core Tables Schema Specification</h2>
+      <div class="bg-white border border-[#E6E1D6] rounded-2xl overflow-hidden shadow-sm">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-[#FDEDE8] text-[#D45644] font-mono uppercase border-b border-[#E6E1D6]">
+            <tr>
+              <th class="p-3">Table Name</th>
+              <th class="p-3">PK / FK</th>
+              <th class="p-3">Key Column & Type</th>
+              <th class="p-3">Architectural Purpose</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#E6E1D6] font-mono">
+            <tr><td class="p-2.5 font-bold">users</td><td class="p-2.5">id (PK)</td><td class="p-2.5">password_hash (VARCHAR)</td><td class="p-2.5 font-sans">Bcrypt auth & settings</td></tr>
+            <tr class="bg-[#FBF9F5]"><td class="p-2.5 font-bold">accounts</td><td class="p-2.5">id (PK), user_id</td><td class="p-2.5">is_reserve (BOOLEAN)</td><td class="p-2.5 font-sans">Liquid vs locked emergency reserves</td></tr>
+            <tr><td class="p-2.5 font-bold">categories</td><td class="p-2.5">id (PK), parent_id</td><td class="p-2.5">category_type (VARCHAR)</td><td class="p-2.5 font-sans">Expense/Income hierarchy</td></tr>
+            <tr class="bg-[#FBF9F5]"><td class="p-2.5 font-bold">transactions</td><td class="p-2.5">id (PK), account_id</td><td class="p-2.5">amount_minor (BIGINT)</td><td class="p-2.5 font-sans">Double-entry integer paise ledger</td></tr>
+            <tr><td class="p-2.5 font-bold">budgets</td><td class="p-2.5">id (PK), user_id</td><td class="p-2.5">total_limit_minor</td><td class="p-2.5 font-sans">Spending envelope caps</td></tr>
+            <tr class="bg-[#FBF9F5]"><td class="p-2.5 font-bold">budget_allocations</td><td class="p-2.5">id (PK), budget_id</td><td class="p-2.5">allocated_amount_minor</td><td class="p-2.5 font-sans">Category limit envelopes</td></tr>
+            <tr><td class="p-2.5 font-bold">recurring_rules</td><td class="p-2.5">id (PK), account_id</td><td class="p-2.5">next_due_date (DATE)</td><td class="p-2.5 font-sans">30-Day bill & SIP radar</td></tr>
+            <tr class="bg-[#FBF9F5]"><td class="p-2.5 font-bold">goals</td><td class="p-2.5">id (PK), user_id</td><td class="p-2.5">target_amount_minor</td><td class="p-2.5 font-sans">Milestone targets & velocity</td></tr>
+            <tr><td class="p-2.5 font-bold">goal_contributions</td><td class="p-2.5">id (PK), goal_id</td><td class="p-2.5">contribution_date</td><td class="p-2.5 font-sans">Milestone deposit ledger</td></tr>
+            <tr class="bg-[#FBF9F5]"><td class="p-2.5 font-bold">app_settings</td><td class="p-2.5">id (PK), user_id</td><td class="p-2.5">setting_value (TEXT)</td><td class="p-2.5 font-sans">Buffer cushion percentage</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SLIDE 6 -->
+    <section class="slide flex-col justify-center space-y-6">
+      <span class="text-xs font-mono font-bold text-[#D45644] uppercase tracking-wider">REST Interface</span>
+      <h2 class="text-4xl font-bold">API Architecture: 42 Endpoints</h2>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="bg-[#ECFDF5] border border-[#2D7A58]/30 p-4 rounded-xl text-center">
+          <p class="text-3xl font-bold text-[#2D7A58] font-mono">21</p>
+          <p class="text-xs font-bold text-[#1C1917] mt-1">GET</p>
+          <p class="text-[10px] text-[#78716C]">Dashboards & Queries</p>
+        </div>
+        <div class="bg-[#FDEDE8] border border-[#D45644]/30 p-4 rounded-xl text-center">
+          <p class="text-3xl font-bold text-[#D45644] font-mono">12</p>
+          <p class="text-xs font-bold text-[#1C1917] mt-1">POST</p>
+          <p class="text-[10px] text-[#78716C]">Creates & Transfers</p>
+        </div>
+        <div class="bg-[#FEF3C7] border border-[#D97706]/30 p-4 rounded-xl text-center">
+          <p class="text-3xl font-bold text-[#D97706] font-mono">4</p>
+          <p class="text-xs font-bold text-[#1C1917] mt-1">PATCH</p>
+          <p class="text-[10px] text-[#78716C]">Inline Field Edits</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl text-center">
+          <p class="text-3xl font-bold text-[#1C1917] font-mono">4</p>
+          <p class="text-xs font-bold text-[#1C1917] mt-1">DELETE</p>
+          <p class="text-[10px] text-[#78716C]">Record Cleanup</p>
+        </div>
+        <div class="bg-[#ECFDF5] border border-[#2D7A58]/30 p-4 rounded-xl text-center">
+          <p class="text-3xl font-bold text-[#2D7A58] font-mono">1</p>
+          <p class="text-xs font-bold text-[#1C1917] mt-1">PUT</p>
+          <p class="text-[10px] text-[#78716C]">User Settings</p>
+        </div>
+      </div>
+      <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl space-y-2">
+        <p class="text-xs font-mono font-bold text-[#78716C] uppercase">4 Core Capabilities</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div class="p-2.5 rounded-lg bg-[#FBF9F5]"><strong>1. Runway Forecast</strong>: <code class="text-[#D45644]">GET /dashboard/money-weather</code></div>
+          <div class="p-2.5 rounded-lg bg-[#FBF9F5]"><strong>2. Atomic Transfers</strong>: <code class="text-[#D45644]">POST /transactions/transfers</code></div>
+          <div class="p-2.5 rounded-lg bg-[#FBF9F5]"><strong>3. Budget Pacing</strong>: <code class="text-[#D45644]">GET /budgets/{id}/performance</code></div>
+          <div class="p-2.5 rounded-lg bg-[#FBF9F5]"><strong>4. In-Memory Export</strong>: <code class="text-[#D45644]">GET /export/transactions</code></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7 -->
+    <section class="slide flex-col justify-center space-y-6">
+      <span class="text-xs font-mono font-bold text-[#D45644] uppercase tracking-wider">Execution Flow</span>
+      <h2 class="text-4xl font-bold">Data Movement Lifecycle (₹500 Trace)</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl space-y-2">
+          <span class="px-2 py-0.5 rounded bg-[#FDEDE8] text-[#D45644] text-[10px] font-mono font-bold">1. USER INPUT</span>
+          <p class="font-serif font-bold text-lg">Browser DOM</p>
+          <p class="text-xs text-[#78716C]">User hits 'Q', types ₹500 "Swiggy", Account: HDFC. Clicks Save.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl space-y-2">
+          <span class="px-2 py-0.5 rounded bg-[#ECFDF5] text-[#2D7A58] text-[10px] font-mono font-bold">2. SANITIZATION</span>
+          <p class="font-serif font-bold text-lg">Frontend Client</p>
+          <p class="text-xs text-[#78716C]">parseRupeesToPaise(500) converts input to 50000 integer paise.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl space-y-2">
+          <span class="px-2 py-0.5 rounded bg-[#FEF3C7] text-[#D97706] text-[10px] font-mono font-bold">3. API ROUTING</span>
+          <p class="font-serif font-bold text-lg">FastAPI ASGI</p>
+          <p class="text-xs text-[#78716C]">POST /api/v1/transactions with JWT token. Pydantic validates amount > 0.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl space-y-2">
+          <span class="px-2 py-0.5 rounded bg-[#FDEDE8] text-[#D45644] text-[10px] font-mono font-bold">4. SQL COMMIT</span>
+          <p class="font-serif font-bold text-lg">Neon Postgres</p>
+          <p class="text-xs text-[#78716C]">SQLAlchemy inserts into transactions (amount_minor=50000). Row ID 42 commits.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl space-y-2">
+          <span class="px-2 py-0.5 rounded bg-[#ECFDF5] text-[#2D7A58] text-[10px] font-mono font-bold">5. RESPONSE</span>
+          <p class="font-serif font-bold text-lg">JSON Envelope</p>
+          <p class="text-xs text-[#78716C]">HTTP 201 Created returned with verified transaction payload.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl space-y-2">
+          <span class="px-2 py-0.5 rounded bg-[#FEF3C7] text-[#D97706] text-[10px] font-mono font-bold">6. REACTIVE UI</span>
+          <p class="font-serif font-bold text-lg">Browser View</p>
+          <p class="text-xs text-[#78716C]">Confetti burst! Toast shows "Logged ₹500 🎉". Numbers count up to new balance.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8 -->
+    <section class="slide flex-col justify-center space-y-6">
+      <span class="text-xs font-mono font-bold text-[#D45644] uppercase tracking-wider">Features</span>
+      <h2 class="text-4xl font-bold">8 Workspaces & Calculations</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl">
+          <p class="font-bold text-[#D45644] font-serif text-sm">⛅ 1. Home Cockpit</p>
+          <p class="text-[#78716C] mt-1">Weather Hero + Safe-to-Spend ring + 4 count-up KPIs.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl">
+          <p class="font-bold text-[#D45644] font-serif text-sm">🧾 2. Transactions</p>
+          <p class="text-[#78716C] mt-1">Multi-filter ledger (accounts, categories, dates).</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl">
+          <p class="font-bold text-[#D45644] font-serif text-sm">🏦 3. Accounts Center</p>
+          <p class="text-[#78716C] mt-1">Liquid Spendable vs Locked Reserves separation.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl">
+          <p class="font-bold text-[#D45644] font-serif text-sm">💓 4. Budget Pulse</p>
+          <p class="text-[#78716C] mt-1">Run-rate bars with "where you should be today" pace.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl">
+          <p class="font-bold text-[#D45644] font-serif text-sm">🎯 5. Goal Momentum</p>
+          <p class="text-[#78716C] mt-1">Milestone rings with 3-month velocity forecast.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl">
+          <p class="font-bold text-[#D45644] font-serif text-sm">📅 6. Recurring Radar</p>
+          <p class="text-[#78716C] mt-1">30-day forward timeline for EMIs, SIPs & rent.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl">
+          <p class="font-bold text-[#D45644] font-serif text-sm">🧬 7. Spending DNA</p>
+          <p class="text-[#78716C] mt-1">Behavioral anomaly alerts & Chart.js donuts.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl">
+          <p class="font-bold text-[#D45644] font-serif text-sm">⚙️ 8. Data & Portability</p>
+          <p class="text-[#78716C] mt-1">Buffer slider + in-memory CSV/JSON backup dumps.</p>
+        </div>
+      </div>
+      <div class="bg-[#ECFDF5] border border-[#2D7A58]/30 p-4 rounded-2xl text-center">
+        <p class="font-mono font-bold text-sm text-[#2D7A58]">Safe-to-Spend = Max(0, Liquid Funds + Inflows - Outflows - Safety Buffer)</p>
+        <p class="text-xs text-[#1C1917] mt-1">Runway Ratio: &ge;1.25 Comfortable (Sun) | &ge;1.0 Tightening (Clouds) | &lt;1.0 At Risk (Rain)</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 9 -->
+    <section class="slide flex-col justify-center space-y-6">
+      <span class="text-xs font-mono font-bold text-[#D45644] uppercase tracking-wider">Deployment</span>
+      <h2 class="text-4xl font-bold">Cloud Serverless Hosting on Vercel</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white border border-[#E6E1D6] p-6 rounded-2xl space-y-3">
+          <span class="px-2 py-0.5 rounded bg-[#FDEDE8] text-[#D45644] text-[10px] font-mono font-bold">1. CI/CD</span>
+          <p class="font-serif font-bold text-xl">GitHub Push</p>
+          <ul class="text-xs space-y-1.5 text-[#78716C]">
+            <li>• Auto builds from main branch</li>
+            <li>• Zero secrets committed (.env ignored)</li>
+            <li>• Pinned Python 3.12 runtime</li>
+          </ul>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-6 rounded-2xl space-y-3">
+          <span class="px-2 py-0.5 rounded bg-[#ECFDF5] text-[#2D7A58] text-[10px] font-mono font-bold">2. SERVERLESS</span>
+          <p class="font-serif font-bold text-xl">Vercel Edge</p>
+          <ul class="text-xs space-y-1.5 text-[#78716C]">
+            <li>• Native FastAPI detection via pyproject.toml</li>
+            <li>• Fast cold starts via lazy DB connect</li>
+            <li>• In-memory streaming (Zero disk writes)</li>
+          </ul>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-6 rounded-2xl space-y-3">
+          <span class="px-2 py-0.5 rounded bg-[#FEF3C7] text-[#D97706] text-[10px] font-mono font-bold">3. PERSISTENCE</span>
+          <p class="font-serif font-bold text-xl">Neon PostgreSQL</p>
+          <ul class="text-xs space-y-1.5 text-[#78716C]">
+            <li>• Serverless connection pooling</li>
+            <li>• pool_pre_ping = True prevents drops</li>
+            <li>• Native BIGINT, BOOLEAN schema</li>
+          </ul>
+        </div>
+      </div>
+      <div class="bg-white border border-[#E6E1D6] p-4 rounded-xl text-center">
+        <p class="font-mono text-sm font-bold text-[#D45644]">Live URL: https://klyro-iota.vercel.app</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 10 -->
+    <section class="slide flex-col justify-center space-y-8 text-center">
+      <div>
+        <span class="px-3 py-1 rounded-full bg-[#ECFDF5] text-[#2D7A58] font-mono text-xs font-bold">CONCLUSION</span>
+        <h2 class="text-5xl font-bold mt-4">Engineering Summary</h2>
+        <p class="text-lg font-serif text-[#D45644] mt-2">Clarity you can act on.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto w-full text-left">
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl">
+          <p class="font-mono font-bold text-sm text-[#D45644]">DETERMINISTIC ACCURACY</p>
+          <p class="text-xs text-[#78716C] mt-1">100% Integer Paise math eliminates binary floating-point drift across all calculations.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl">
+          <p class="font-mono font-bold text-sm text-[#2D7A58]">DECOUPLED SIMPLICITY</p>
+          <p class="text-xs text-[#78716C] mt-1">Zero-build native Vanilla ES Modules UI paired with asynchronous Python engine.</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl">
+          <p class="font-mono font-bold text-sm text-[#D97706]">ENTERPRISE API COVERAGE</p>
+          <p class="text-xs text-[#78716C] mt-1">42 REST endpoints verified by automated Pytest suite (36/36 tests passing).</p>
+        </div>
+        <div class="bg-white border border-[#E6E1D6] p-5 rounded-2xl">
+          <p class="font-mono font-bold text-sm text-[#D45644]">CLOUD-NATIVE PORTABILITY</p>
+          <p class="text-xs text-[#78716C] mt-1">Seamlessly runs on SQLite for offline local dev and Neon Postgres on Vercel.</p>
+        </div>
+      </div>
+      <div>
+        <p class="text-xl font-serif font-bold">Thank You!</p>
+        <p class="text-xs font-mono text-[#78716C] mt-1">Questions & Live Demonstration</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation / Shortcut Hint -->
+  <footer class="flex items-center justify-between border-t border-[#E6E1D6] pt-4 mt-6 text-xs text-[#78716C] no-print">
+    <span>Use <kbd class="px-1.5 py-0.5 bg-white border border-[#E6E1D6] rounded font-mono">←</kbd> <kbd class="px-1.5 py-0.5 bg-white border border-[#E6E1D6] rounded font-mono">→</kbd> or <kbd class="px-1.5 py-0.5 bg-white border border-[#E6E1D6] rounded font-mono">Space</kbd> to navigate</span>
+    <span class="font-mono">https://klyro-iota.vercel.app</span>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('slide-counter');
+
+    function showSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= slides.length) index = slides.length - 1;
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === index);
+      });
+      currentSlide = index;
+      counter.textContent = `${currentSlide + 1} / ${slides.length}`;
+    }
+
+    document.getElementById('prev-btn').addEventListener('click', () => showSlide(currentSlide - 1));
+    document.getElementById('next-btn').addEventListener('click', () => showSlide(currentSlide + 1));
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') showSlide(currentSlide + 1);
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') showSlide(currentSlide - 1);
+    });
+  </script>
+</body>
+</html>
