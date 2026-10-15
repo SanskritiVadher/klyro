@@ -1,2 +1,25 @@
+[project]
+name = "klyro"
+version = "0.1.0"
+description = "Klyro Personal Financial Intelligence Workspace"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14.0",
+    "python-multipart>=0.0.17",
+    "python-dateutil>=2.9.0",
+    "pyjwt>=2.10.0",
+    "bcrypt>=4.2.0",
+    "pwdlib[bcrypt]>=0.2.0",
+    "httpx>=0.28.0",
+    "email-validator>=2.2.0",
+    "psycopg[binary]>=3.2.0",
+]
+
 [tool.vercel]
 entrypoint = "backend.app.main:app"
