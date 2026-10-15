@@ -27,8 +27,17 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 target_metadata = Base.metadata
 
-# Override sqlalchemy.url with dynamic app configuration
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Normalize database URL for psycopg3 driver
+raw_db_url = settings.DATABASE_URL
+if raw_db_url.startswith("postgres://"):
+    db_url = raw_db_url.replace("postgres://", "postgresql+psycopg://", 1)
+elif raw_db_url.startswith("postgresql://") and not raw_db_url.startswith("postgresql+"):
+    db_url = raw_db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+else:
+    db_url = raw_db_url
+
+config.set_main_option("sqlalchemy.url", db_url)
+is_sqlite = db_url.startswith("sqlite")
 
 
 def run_migrations_offline() -> None:
@@ -39,7 +48,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        render_as_batch=True,  # Crucial for SQLite ALTER TABLE support
+        render_as_batch=is_sqlite,
     )
 
     with context.begin_transaction():
@@ -58,7 +67,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True,  # Crucial for SQLite ALTER TABLE support
+            render_as_batch=is_sqlite,
         )
 
         with context.begin_transaction():

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, DateTime, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
+import sqlalchemy as sa
 
 from backend.app.database import Base
 
@@ -13,10 +14,10 @@ class Account(Base):
     name = Column(String(100), nullable=False)
     account_type = Column(String(30), nullable=False)  # 'bank', 'cash', 'wallet', 'credit_card'
     currency = Column(String(3), default="INR", nullable=False)
-    opening_balance_minor = Column(Integer, default=0, nullable=False)  # In paise (can be negative for credit cards)
+    opening_balance_minor = Column(BigInteger, default=0, nullable=False)  # In paise (can be negative for credit cards)
     institution_name = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    is_reserve = Column(Boolean, default=False, nullable=False, server_default="0")
+    is_reserve = Column(Boolean, default=False, nullable=False, server_default=sa.false())
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 

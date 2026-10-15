@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, BigInteger, String, Date, DateTime, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
 
 from backend.app.database import Base
@@ -14,7 +14,7 @@ class RecurringRule(Base):
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     name = Column(String(100), nullable=False)
     rule_type = Column(String(20), nullable=False)  # 'expense', 'income', 'transfer'
-    expected_amount_minor = Column(Integer, nullable=False)  # in paise
+    expected_amount_minor = Column(BigInteger, nullable=False)  # in paise
     frequency = Column(String(20), default="monthly", nullable=False)  # 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
     start_date = Column(Date, nullable=False)
     next_due_date = Column(Date, nullable=False, index=True)

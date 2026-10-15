@@ -4,21 +4,37 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from backend.app.config import settings
 
-# Create engine with appropriate SQLite / PostgreSQL settings
-connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
+# Normalize DATABASE_URL for Postgres / Neon (psycopg3 driver)
+raw_db_url = settings.DATABASE_URL
+if raw_db_url.startswith("postgres://"):
+    db_url = raw_db_url.replace("postgres://", "postgresql+psycopg://", 1)
+elif raw_db_url.startswith("postgresql://") and not raw_db_url.startswith("postgresql+"):
+    db_url = raw_db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+else:
+    db_url = raw_db_url
+
+is_sqlite = db_url.startswith("sqlite")
+
+engine_kwargs = {
+    "echo": False,
+    "future": True,
+}
+
+if is_sqlite:
     # SQLite requires check_same_thread=False for FastAPI multi-threaded requests
-    connect_args = {"check_same_thread": False}
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # PostgreSQL settings optimized for serverless platforms (e.g. Neon, Vercel)
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 300
 
 engine = create_engine(
-    settings.DATABASE_URL,
-    echo=False,
-    connect_args=connect_args,
-    future=True,
+    db_url,
+    **engine_kwargs,
 )
 
-# Enforce foreign key constraints in SQLite
-if settings.DATABASE_URL.startswith("sqlite"):
+# Enforce foreign key constraints ONLY in SQLite
+if is_sqlite:
     @event.listens_for(Engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()

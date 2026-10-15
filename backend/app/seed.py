@@ -36,7 +36,12 @@ def seed_demo_data(db: Session = None, reset: bool = True):
             Base.metadata.drop_all(bind=engine)
             Base.metadata.create_all(bind=engine)
 
-        # 1. Demo User
+        # 1. Demo User (clean up existing demo user if present)
+        existing_user = db.query(User).filter_by(email="sanskriti@klyro.finance").first()
+        if existing_user:
+            db.delete(existing_user)
+            db.flush()
+
         demo_user = User(
             name="Sanskriti Vadher",
             email="sanskriti@klyro.finance",

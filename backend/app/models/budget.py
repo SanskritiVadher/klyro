@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, CheckConstraint, UniqueConstraint
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Date, DateTime, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from backend.app.database import Base
@@ -14,7 +14,7 @@ class Budget(Base):
     period_type = Column(String(20), default="monthly", nullable=False)  # 'monthly', 'custom'
     start_date = Column(Date, nullable=False, index=True)
     end_date = Column(Date, nullable=False, index=True)
-    total_limit_minor = Column(Integer, nullable=True)  # in paise
+    total_limit_minor = Column(BigInteger, nullable=True)  # in paise
     rollover_enabled = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
@@ -38,7 +38,7 @@ class BudgetAllocation(Base):
     id = Column(Integer, primary_key=True, index=True)
     budget_id = Column(Integer, ForeignKey("budgets.id", ondelete="CASCADE"), nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False, index=True)
-    allocated_amount_minor = Column(Integer, nullable=False)  # in paise (>= 0)
+    allocated_amount_minor = Column(BigInteger, nullable=False)  # in paise (>= 0)
 
     __table_args__ = (
         CheckConstraint("allocated_amount_minor >= 0", name="check_non_negative_allocation"),

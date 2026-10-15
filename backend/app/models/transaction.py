@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, CheckConstraint, Index
+from sqlalchemy import Column, Integer, BigInteger, String, Date, DateTime, ForeignKey, CheckConstraint, Index
 from sqlalchemy.orm import relationship
 
 from backend.app.database import Base
@@ -13,7 +13,7 @@ class Transaction(Base):
     account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True)
     transaction_type = Column(String(20), nullable=False)  # 'expense', 'income', 'transfer', 'refund'
-    amount_minor = Column(Integer, nullable=False)  # always strictly positive in paise (> 0)
+    amount_minor = Column(BigInteger, nullable=False)  # always strictly positive in paise (> 0)
     currency = Column(String(3), default="INR", nullable=False)
     merchant = Column(String(150), nullable=True, index=True)
     description = Column(String(255), nullable=True)

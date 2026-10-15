@@ -86,11 +86,22 @@ def health_check():
 app.include_router(api_v1_router)
 
 # Static frontend mounting (if frontend directory exists)
-frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
-if frontend_dir.exists():
+possible_frontend_dirs = [
+    Path(__file__).resolve().parent.parent.parent / "frontend",
+    Path.cwd() / "frontend",
+    Path("frontend").resolve(),
+]
+frontend_dir = None
+for p in possible_frontend_dirs:
+    if p.exists() and (p / "index.html").exists():
+        frontend_dir = p
+        break
+
+if frontend_dir:
     app.mount("/static", StaticFiles(directory=str(frontend_dir)), name="static")
 
     @app.get("/", include_in_schema=False)
+    @app.get("/index.html", include_in_schema=False)
     def serve_frontend_root():
         """Serve the frontend single-page application shell."""
         return FileResponse(str(frontend_dir / "index.html"))

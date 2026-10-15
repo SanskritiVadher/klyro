@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, BigInteger, String, Date, DateTime, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
 
 from backend.app.database import Base
@@ -11,8 +11,8 @@ class Goal(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False)
-    target_amount_minor = Column(Integer, nullable=False)  # in paise (> 0)
-    current_amount_minor = Column(Integer, default=0, nullable=False)  # in paise (>= 0)
+    target_amount_minor = Column(BigInteger, nullable=False)  # in paise (> 0)
+    current_amount_minor = Column(BigInteger, default=0, nullable=False)  # in paise (>= 0)
     target_date = Column(Date, nullable=True)
     priority = Column(String(20), default="medium", nullable=False)  # 'low', 'medium', 'high'
     linked_account_id = Column(Integer, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
@@ -45,7 +45,7 @@ class GoalContribution(Base):
     id = Column(Integer, primary_key=True, index=True)
     goal_id = Column(Integer, ForeignKey("goals.id", ondelete="CASCADE"), nullable=False, index=True)
     transaction_id = Column(Integer, ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True)
-    amount_minor = Column(Integer, nullable=False)  # strictly positive paise
+    amount_minor = Column(BigInteger, nullable=False)  # strictly positive paise
     contribution_date = Column(Date, nullable=False, index=True)
     contribution_type = Column(String(20), default="deposit", nullable=False)  # 'deposit', 'withdrawal'
     notes = Column(String(255), nullable=True)

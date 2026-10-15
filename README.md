@@ -237,4 +237,42 @@ To use:
 
 ---
 
+## 11. Vercel & Neon PostgreSQL Production Deployment
+
+Klyro supports dual-engine deployment: zero-config SQLite for local development and Neon Serverless PostgreSQL for production hosting on Vercel.
+
+### Step 1: Create a Free Neon PostgreSQL Database
+1. Go to [Neon.tech](https://neon.tech) and sign up / log in.
+2. Create a new project (e.g. `klyro-db`).
+3. Under the **Dashboard** / **Connection Details**, copy the pooled Connection String:
+   `postgresql://[user]:[password]@[endpoint]-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require`
+
+### Step 2: Initialize Schema & Seed Demo Data
+Run the automated initialization script from your local machine:
+```powershell
+python scripts/setup_neon.py "postgresql://[user]:[password]@[endpoint]-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
+```
+*(Or run `python scripts/setup_neon.py` with no arguments to be prompted for the URL).*
+This runs `alembic upgrade head` and seeds all demo Indian financial data (accounts, transactions, budgets, goals, recurring commitments) directly into your Neon database.
+
+### Step 3: Configure Environment Variables in Vercel
+In your Vercel Project Settings → **Environment Variables**, set:
+
+| Variable | Value | Description |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `postgresql://...` | Neon PostgreSQL pooled connection string |
+| `SECRET_KEY` | *(Generate a 32+ char random string)* | Cryptographic JWT signing key for production |
+| `APP_ENV` | `production` | Production environment flag |
+| `DEBUG` | `false` | Disable debug logs & stack traces |
+| `CORS_ORIGINS` | `https://*.vercel.app,https://your-custom-domain.com` | Allowed CORS origins |
+
+### Step 4: Deploy to Vercel
+1. Push your repository to GitHub / GitLab / Bitbucket.
+2. In Vercel, click **Add New** → **Project** and import `klyro`.
+3. Root Directory: `./` (Vercel automatically detects `vercel.json` and `api/index.py`).
+4. Click **Deploy**.
+5. Once deployment completes, visit your live Vercel URL!
+
+---
+
 *Klyro — Clarity you can act on.*
