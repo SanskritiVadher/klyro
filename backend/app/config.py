@@ -1,6 +1,6 @@
 import os
 import json
-from typing import List
+from typing import List, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     SAFE_TO_SPEND_BUFFER_PCT: float = 10.0
     TIMEZONE: str = "Asia/Kolkata"
 
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:8081",
         "http://127.0.0.1:8081",
         "http://localhost:8090",
