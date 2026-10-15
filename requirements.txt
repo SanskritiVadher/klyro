@@ -8,6 +8,7 @@ python-multipart>=0.0.17
 python-dateutil>=2.9.0
 pyjwt>=2.10.0
 bcrypt>=4.2.0
+pwdlib[bcrypt]>=0.2.0
 httpx>=0.28.0
 email-validator>=2.2.0
 psycopg[binary]>=3.2.0
