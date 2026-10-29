@@ -1,9 +1,43 @@
 /**
  * KLYRO — Client-Side Hash Router
- * Connects the navigation rail to views with clean transitions.
+ * Connects the navigation rail to views with clean transitions and auth route guarding.
  */
 
 import { store } from './state.js';
+import { api } from './api.js';
+import { openAuthModal } from './components/auth-modal.js';
+
+const PUBLIC_ROUTES = new Set(['welcome']);
+
+export function syncShellVisibility(isAuthenticated, route) {
+  const isPublicRoute = PUBLIC_ROUTES.has(route);
+  const showPublicShell = !isAuthenticated || isPublicRoute;
+
+  const publicNav = document.getElementById('public-nav');
+  const appSidebar = document.getElementById('app-sidebar');
+  const appHeader = document.getElementById('app-header');
+  const appMobileNav = document.getElementById('app-mobile-nav');
+
+  if (showPublicShell) {
+    publicNav?.classList.remove('hidden');
+    publicNav?.classList.add('flex');
+
+    appSidebar?.classList.remove('md:flex');
+    appSidebar?.classList.add('hidden');
+
+    appHeader?.classList.add('hidden');
+    appMobileNav?.classList.add('hidden');
+  } else {
+    publicNav?.classList.add('hidden');
+    publicNav?.classList.remove('flex');
+
+    appSidebar?.classList.remove('hidden');
+    appSidebar?.classList.add('md:flex');
+
+    appHeader?.classList.remove('hidden');
+    appMobileNav?.classList.remove('hidden');
+  }
+}
 
 class Router {
   constructor() {
@@ -29,26 +63,58 @@ class Router {
   }
 
   handleHashChange() {
-    const hash = window.location.hash.replace('#', '').trim();
-    const route = hash || 'home';
+    const rawHash = window.location.hash.replace('#', '').trim();
+    const isAuthed = api.isAuthenticated();
 
+    // Route alias handling: #login or #register opens modal on welcome page
+    if (rawHash === 'login' || rawHash === 'register') {
+      if (isAuthed) {
+        this.navigate('home');
+        return;
+      }
+      this.currentRoute = 'welcome';
+      store.setState({ activeView: 'welcome' });
+      syncShellVisibility(false, 'welcome');
+      const welcomeHandler = this.routes.get('welcome');
+      if (this.container && welcomeHandler) {
+        this.container.innerHTML = '';
+        welcomeHandler(this.container);
+      }
+      openAuthModal(rawHash);
+      return;
+    }
+
+    // Determine target route
+    let route = rawHash;
+    if (!route) {
+      route = isAuthed ? 'home' : 'welcome';
+    }
+
+    // Enforce Route Protection for unauthenticated visitors
+    if (!isAuthed && !PUBLIC_ROUTES.has(route)) {
+      sessionStorage.setItem('klyro_redirect', route);
+      this.navigate('welcome');
+      return;
+    }
+
+    // Authenticated user landing on welcome can view welcome or proceed to dashboard
     if (this.routes.has(route)) {
       this.currentRoute = route;
       store.setState({ activeView: route });
+      syncShellVisibility(isAuthed, route);
       this.updateActiveNavLinks(route);
 
       const handler = this.routes.get(route);
       if (this.container && typeof handler === 'function') {
         this.container.classList.remove('view-enter');
-        // Trigger reflow to restart animation
-        void this.container.offsetWidth;
+        void this.container.offsetWidth; // Trigger reflow
         this.container.classList.add('view-enter');
         this.container.innerHTML = '';
         handler(this.container);
       }
     } else {
-      // Fallback to home
-      this.navigate('home');
+      // Fallback
+      this.navigate(isAuthed ? 'home' : 'welcome');
     }
   }
 
@@ -65,6 +131,7 @@ class Router {
 
     // Update Topbar View Title
     const titleMap = {
+      welcome: 'Welcome to Klyro',
       home: 'Financial Home & Weather',
       transactions: 'Transaction Ledger',
       budgets: 'Budget Pulse & Allocations',

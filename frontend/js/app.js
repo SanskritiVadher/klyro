@@ -4,9 +4,12 @@
 
 import { store } from './state.js';
 import { router } from './router.js';
+import { api } from './api.js';
 import { showToast } from './components/toast.js';
 import { initQuickCaptureModal, openQuickCaptureModal } from './components/quick-capture-modal.js';
+import { initAuthModal, openAuthModal } from './components/auth-modal.js';
 
+import { renderWelcomeView } from './views/welcome.js';
 import { renderHomeView } from './views/home.js';
 import { renderTransactionsView } from './views/transactions.js';
 import { renderBudgetsView } from './views/budgets.js';
@@ -16,13 +19,35 @@ import { renderGoalsView } from './views/goals.js';
 import { renderRecurringView } from './views/recurring.js';
 import { renderSettingsView } from './views/settings.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+function updateUserProfileUI(user) {
+  const initialsEl = document.getElementById('sidebar-user-initials');
+  const nameEl = document.getElementById('sidebar-user-name');
+  const metaEl = document.getElementById('sidebar-user-meta');
+
+  if (user && user.name) {
+    const names = user.name.trim().split(' ');
+    const initials = names.length > 1 
+      ? (names[0][0] + names[names.length - 1][0]).toUpperCase()
+      : user.name.substring(0, 2).toUpperCase();
+
+    if (initialsEl) initialsEl.textContent = initials;
+    if (nameEl) nameEl.textContent = user.name;
+    if (metaEl) metaEl.textContent = `${user.email || 'Klyro Workspace'} · ${user.default_currency || 'INR'}`;
+  } else {
+    if (initialsEl) initialsEl.textContent = 'KY';
+    if (nameEl) nameEl.textContent = 'Guest User';
+    if (metaEl) metaEl.textContent = 'Not Signed In';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('main-view-container');
   const periodLabel = document.getElementById('period-display-label');
   const quickCaptureModal = document.getElementById('quick-capture-modal');
   const shortcutsModal = document.getElementById('shortcuts-modal');
 
-  // Register views with the client router
+  // Register all public and authenticated views with router
+  router.register('welcome', renderWelcomeView);
   router.register('home', renderHomeView);
   router.register('transactions', renderTransactionsView);
   router.register('budgets', renderBudgetsView);
@@ -32,7 +57,72 @@ document.addEventListener('DOMContentLoaded', () => {
   router.register('recurring', renderRecurringView);
   router.register('settings', renderSettingsView);
 
-  // Initialize router
+  // Initialize auth modal component
+  initAuthModal();
+
+  // Public Nav triggers
+  document.getElementById('public-login-btn')?.addEventListener('click', () => {
+    openAuthModal('login');
+  });
+  document.getElementById('public-register-btn')?.addEventListener('click', () => {
+    openAuthModal('register');
+  });
+
+  // Global Logout Handlers
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch (err) {
+      console.warn('Logout error ignored:', err);
+    }
+    store.setState({ user: null });
+    localStorage.removeItem('klyro_user');
+    updateUserProfileUI(null);
+    showToast('Signed out of Klyro workspace.');
+    router.navigate('welcome');
+  };
+
+  document.getElementById('sidebar-logout-btn')?.addEventListener('click', handleLogout);
+  document.getElementById('header-logout-btn')?.addEventListener('click', handleLogout);
+
+  // Session expired event listener
+  window.addEventListener('klyro:session-expired', (e) => {
+    store.setState({ user: null });
+    localStorage.removeItem('klyro_user');
+    updateUserProfileUI(null);
+    showToast(e.detail?.message || 'Your session has expired. Please sign in.', 'error');
+    router.navigate('welcome');
+    openAuthModal('login');
+  });
+
+  // Reactive listener when user store updates
+  store.subscribe('user', (newUser) => {
+    updateUserProfileUI(newUser);
+  });
+
+  // Load cached or remote profile if authenticated
+  if (api.isAuthenticated()) {
+    try {
+      const cached = localStorage.getItem('klyro_user');
+      if (cached) {
+        store.setState({ user: JSON.parse(cached) });
+      }
+      // Refresh user profile from backend in background
+      api.getMe().then((remoteUser) => {
+        store.setState({ user: remoteUser });
+        localStorage.setItem('klyro_user', JSON.stringify(remoteUser));
+      }).catch((err) => {
+        console.warn('Could not refresh user profile:', err);
+      });
+    } catch (e) {
+      console.warn('Failed to parse cached user:', e);
+    }
+  } else {
+    store.setState({ user: null });
+    updateUserProfileUI(null);
+  }
+
+  // Initialize router (dispatches initial view based on auth state & hash)
   router.init(container);
 
   // Synchronize period display with store
@@ -93,7 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (!isTyping) {
       if (e.key === 'q' || e.key === 'Q') {
         e.preventDefault();
-        openQuickCapture();
+        if (api.isAuthenticated()) {
+          openQuickCapture();
+        } else {
+          openAuthModal('login');
+        }
       } else if (e.key === '[') {
         e.preventDefault();
         store.shiftPeriod(-1);
@@ -112,4 +206,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('Klyro Financial Intelligence Workspace initialized successfully.');
 });
+
 

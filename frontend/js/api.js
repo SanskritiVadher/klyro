@@ -10,6 +10,10 @@ class ApiClient {
     this.token = localStorage.getItem('klyro_token') || localStorage.getItem('kosh_token') || null;
   }
 
+  isAuthenticated() {
+    return Boolean(this.token);
+  }
+
   setToken(token) {
     this.token = token;
     if (token) {
@@ -18,6 +22,7 @@ class ApiClient {
       localStorage.removeItem('klyro_token');
       localStorage.removeItem('kosh_token');
     }
+    window.dispatchEvent(new CustomEvent('klyro:auth-changed', { detail: { authenticated: Boolean(token) } }));
   }
 
   async request(endpoint, options = {}) {
@@ -49,6 +54,15 @@ class ApiClient {
           code: `HTTP_${response.status}`,
           message: data?.detail || 'An unexpected error occurred while communicating with the server.',
         };
+
+        // Handle expired / unauthorized token automatically
+        if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+          this.setToken(null);
+          window.dispatchEvent(new CustomEvent('klyro:session-expired', { 
+            detail: { message: errObj.message || 'Session expired. Please sign in again.' } 
+          }));
+        }
+
         const error = new Error(errObj.message || 'API Error');
         error.code = errObj.code;
         error.details = errObj.details;
@@ -73,6 +87,35 @@ class ApiClient {
       this.setToken(data.access_token);
     }
     return data;
+  }
+
+  async register(payload) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async logout() {
+    try {
+      if (this.token) {
+        await this.request('/auth/logout', { method: 'POST' });
+      }
+    } catch (err) {
+      console.warn('[API Client] Server logout warning:', err);
+    } finally {
+      this.setToken(null);
+    }
+  }
+
+  async changePassword(currentPassword, newPassword) {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
   }
 
   async getMe() {

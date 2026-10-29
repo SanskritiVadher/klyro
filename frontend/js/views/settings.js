@@ -4,6 +4,9 @@
  */
 
 import { api } from '../api.js';
+import { store } from '../state.js';
+import { router } from '../router.js';
+import { showToast } from '../components/toast.js';
 import { renderCardSkeleton } from '../components/loading.js';
 import { init3DTilt } from '../utils/animate.js';
 
@@ -127,6 +130,30 @@ export async function renderSettingsView(container) {
           </div>
         </div>
 
+        <!-- Account Profile & Security -->
+        <div class="paper-card p-6 space-y-4">
+          <div class="border-b border-[#E6E1D6] pb-3 flex items-center justify-between">
+            <div>
+              <h4 class="font-serif text-base font-bold text-[#1C1917]">Account & Authentication</h4>
+              <p class="text-xs text-[#78716C]">Session controls, user identity, and workspace security</p>
+            </div>
+            <button type="button" id="settings-logout-btn" class="btn btn-secondary text-xs text-[#B84A39] border-[#FECACA] hover:bg-[#FEF2F2] flex items-center gap-1.5">
+              <span>Sign Out</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <span class="text-[#78716C] block">Workspace Owner</span>
+              <span id="settings-user-name" class="font-semibold text-[#1C1917]">Loading...</span>
+            </div>
+            <div>
+              <span class="text-[#78716C] block">Registered Email</span>
+              <span id="settings-user-email" class="font-mono text-[#1C1917]">Loading...</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Demo State Reset & Portability -->
         <div class="paper-card p-6 space-y-3 border border-[#FECACA] bg-[#FEF2F2]">
           <h4 class="font-serif text-base font-bold text-[#B84A39]">Reset or Re-seed Isolated Demo Data</h4>
@@ -144,6 +171,33 @@ export async function renderSettingsView(container) {
 
       </div>
     `;
+
+    // Populate user profile info in settings
+    const currentUser = store.getState().user;
+    const nameEl = document.getElementById('settings-user-name');
+    const emailEl = document.getElementById('settings-user-email');
+    if (currentUser) {
+      if (nameEl) nameEl.textContent = currentUser.name;
+      if (emailEl) emailEl.textContent = currentUser.email;
+    } else {
+      api.getMe().then(u => {
+        if (nameEl) nameEl.textContent = u.name;
+        if (emailEl) emailEl.textContent = u.email;
+      }).catch(() => {});
+    }
+
+    // Settings Sign Out Button
+    document.getElementById('settings-logout-btn')?.addEventListener('click', async () => {
+      try {
+        await api.logout();
+      } catch (e) {
+        console.warn('Logout error:', e);
+      }
+      store.setState({ user: null });
+      localStorage.removeItem('klyro_user');
+      showToast('Signed out of Klyro workspace.');
+      router.navigate('welcome');
+    });
 
     // Form Save
     const form = document.getElementById('settings-form');
