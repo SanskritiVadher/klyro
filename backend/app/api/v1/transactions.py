@@ -161,8 +161,24 @@ def update_transaction(
         )
 
     if payload.account_id is not None:
+        target_acc = db.query(Account).filter(Account.id == payload.account_id, Account.user_id == current_user.id).first()
+        if not target_acc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "ACCOUNT_NOT_FOUND", "message": "Target account not found"}
+            )
         tx.account_id = payload.account_id
+
     if payload.category_id is not None:
+        target_cat = db.query(Category).filter(
+            Category.id == payload.category_id,
+            (Category.user_id == current_user.id) | (Category.user_id == None)
+        ).first()
+        if not target_cat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "CATEGORY_NOT_FOUND", "message": "Target category not found"}
+            )
         tx.category_id = payload.category_id
     if payload.transaction_type is not None:
         tx.transaction_type = payload.transaction_type

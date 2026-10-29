@@ -1,0 +1,632 @@
+Issue Type,Summary,Description,Priority,Component,Labels
+Story,[Authentication] Register New User Account with Secure Password Policy,"h3. User Story
+*As a* new Klyro user,
+*I want to* register using my email address and a strong password,
+*So that* I can establish a secure, private personal finance workspace.
+
+h3. Acceptance Criteria
+- Given a visitor with a unique email address and a password meeting minimum complexity rules (>= 8 chars), when submitting registration, an account is created and an encrypted record is stored in the database.
+- Given an existing registered email address, when attempting duplicate registration, the system rejects it with an explicit 409 Conflict error.
+- Given a password that fails complexity requirements, the system returns descriptive client-side validation errors before form submission.",Highest,Authentication,auth security backend frontend
+Story,[Authentication] User Authentication via JWT Bearer Token,"h3. User Story
+*As a* registered user,
+*I want to* authenticate with my credentials and receive a signed JWT bearer token,
+*So that* my client session can authorize subsequent API requests securely without sending credentials repeatedly.
+
+h3. Acceptance Criteria
+- Given valid user credentials, when posting to /api/auth/token, the server returns an access token with a configured expiration window and token_type 'bearer'.
+- Given invalid password or non-existent email, the server returns 401 Unauthorized with a generic failure message to prevent user enumeration.
+- Given a valid bearer token in the Authorization header, protected API routes resolve the user context.",Highest,Authentication,auth jwt security api
+Story,[Authentication] Automatic Session Expiration and Interceptor Redirection,"h3. User Story
+*As a* authenticated user,
+*I want to* have my expired session intercepted gracefully,
+*So that* unauthorized access is prevented on shared devices and I am prompted to log in again without data corruption.
+
+h3. Acceptance Criteria
+- Given an expired JWT token, when an API request is initiated, the response status is 401 Unauthorized.
+- Given a 401 response from any protected endpoint, the frontend HTTP client clears local session storage and transitions to the login screen.
+- Given session termination, the application preserves the attempted route to redirect the user back upon successful re-authentication.",High,Authentication,auth session frontend security
+Story,[Authentication] Cryptographic Password Hashing with Bcrypt Salt,"h3. User Story
+*As a* system security auditor,
+*I want to* enforce industry-standard bcrypt hashing for all stored user passwords,
+*So that* compromised database snapshots cannot expose plaintext user credentials.
+
+h3. Acceptance Criteria
+- Given a plaintext user password during registration or reset, the backend hashes the secret with bcrypt and an adaptive work factor before database insertion.
+- Given a database dump, no plaintext or reversibly encrypted password strings are present.
+- Given login verification, the system uses constant-time hash comparison to prevent timing attacks.",Highest,Authentication,security backend encryption
+Story,[Authentication] Fetch Authenticated User Profile Context,"h3. User Story
+*As a* authenticated user,
+*I want to* retrieve my user profile and account configuration upon application launch,
+*So that* the interface personalizes the workspace with my name, email, and preferred settings.
+
+h3. Acceptance Criteria
+- Given an active bearer token, when calling GET /api/auth/me, the response returns the user ID, email, full name, and creation timestamp.
+- Given the user payload, sensitive attributes including password hashes and salt parameters are strictly omitted from the serialization schema.
+- Given network reconnection, the application re-validates the profile context against the server.",Medium,Authentication,auth user-profile api frontend
+Story,[Accounts] Create Multiple Financial Accounts Across Categories,"h3. User Story
+*As a* budget manager,
+*I want to* create distinct financial accounts categorized as Bank, Credit Card, Digital Wallet, or Cash,
+*So that* I can mirror all my real-world financial instruments in a single dashboard.
+
+h3. Acceptance Criteria
+- Given a valid account name, account type, initial balance in minor units, and currency code, when submitting the creation form, a new account record is persisted.
+- Given an invalid or unsupported account type, the API rejects the request with a 422 Unprocessable Entity validation error.
+- Given account creation with an opening balance, an initial balancing entry is logged to preserve auditability.",High,Accounts,accounts ledger onboarding
+Story,[Accounts] Real-Time Aggregated Account Balances Overview,"h3. User Story
+*As a* financial planner,
+*I want to* view the real-time balance of every account alongside an aggregated net worth calculation,
+*So that* I have immediate visibility into my consolidated financial position.
+
+h3. Acceptance Criteria
+- Given multiple active accounts, when opening the accounts dashboard, each account displays its current calculated balance in formatted local currency.
+- Given credit accounts with negative balances (liabilities), the net liquidity summary correctly offsets them against positive depository assets.
+- Given any ledger update, the account card balances refresh immediately without full page reloads.",High,Accounts,accounts dashboard balance ui
+Story,[Accounts] Update Account Metadata and Masked Identifiers,"h3. User Story
+*As a* user managing multiple accounts at one institution,
+*I want to* update an account's display name, institution name, and masked account suffix (e.g. '••4092'),
+*So that* I can easily differentiate between duplicate bank accounts.
+
+h3. Acceptance Criteria
+- Given an existing account, when editing metadata fields through PUT /api/accounts/{id}, the updated attributes persist immediately.
+- Given an update payload, attempts to manually alter the ledger-derived balance directly through metadata endpoints are rejected.
+- Given account renaming, all linked ledger views, filters, and transaction badges immediately reflect the updated title.",Medium,Accounts,accounts metadata crud
+Story,[Accounts] Soft-Archive Inactive or Closed Accounts,"h3. User Story
+*As a* user who closed a credit card or bank account,
+*I want to* archive the account rather than permanently deleting it,
+*So that* historical ledger transactions remain intact for audit while hiding the account from active selection lists.
+
+h3. Acceptance Criteria
+- Given an active account, when toggling the 'archive' status, the account's is_active flag is set to false.
+- Given an archived account, it is excluded by default from the transaction account-picker and Safe-to-Spend calculations.
+- Given historical ledger searches, transactions belonging to the archived account remain viewable and filterable.",Medium,Accounts,accounts archive soft-delete
+Story,[Accounts] Balance Reconciliation and Drift Adjustment Entry,"h3. User Story
+*As a* meticulous budgeter,
+*I want to* enter a verified actual bank balance to auto-generate a balancing adjustment entry,
+*So that* I can reconcile unrecorded cash outflows or minor discrepancies without corrupting ledger integrity.
+
+h3. Acceptance Criteria
+- Given an account whose calculated balance differs from physical bank statement, when entering the statement balance, the system calculates the exact difference in paise.
+- Given a positive or negative drift, the system generates an audit-tagged 'Reconciliation Adjustment' transaction with the matching category.
+- Given adjustment creation, the account's new calculated balance matches the statement figure exactly.",Medium,Accounts,accounts reconciliation audit
+Story,[Accounts] Configure Workspace Primary Currency and Locale Formatting,"h3. User Story
+*As a* international or Indian user,
+*I want to* configure my preferred currency code and numbering system (e.g. INR Lakhs/Crores vs USD Thousands/Millions),
+*So that* monetary values are rendered in intuitive cultural formats across the entire application.
+
+h3. Acceptance Criteria
+- Given a user setting currency to INR, numbers format using the Indian numbering system (e.g. ₹1,50,000.00).
+- Given a user setting currency to USD/EUR, numbers format using Western grouping (e.g. $150,000.00).
+- Given currency switching, underlying stored minor-unit integers (paise/cents) remain unaltered.",Low,Accounts,i18n currency formatting settings
+Story,[Reserves] Flag Specific Accounts as Untouchable Emergency Reserves,"h3. User Story
+*As a* disciplined saver,
+*I want to* designate an account with the 'is_reserve' flag,
+*So that* funds dedicated to life emergencies are structurally ring-fenced from daily operational funds.
+
+h3. Acceptance Criteria
+- Given an account creation or update form, when checking the 'Emergency Reserve' toggle, the boolean field is_reserve is saved as true.
+- Given a designated reserve account, the UI decorates the account card with a distinct Shield icon and protective styling.
+- Given an account marked as reserve, it is clearly segregated from operational checking/cash pools in summaries.",High,Reserves,reserves emergency-fund accounts
+Story,[Reserves] Exclude Emergency Reserves from Liquid Spendable Calculation,"h3. User Story
+*As a* user calculating spendable income,
+*I want to* have the engine automatically exclude accounts marked as 'is_reserve' from the liquid assets total,
+*So that* I am never misled into thinking emergency savings can be spent on discretionary items.
+
+h3. Acceptance Criteria
+- Given 3 operational accounts totaling ₹1,00,000 and 1 reserve account with ₹3,00,000, when computing liquid assets for Safe-to-Spend, the result is strictly ₹1,00,000.
+- Given a database query on liquid balances, the SQL where clause enforces 'WHERE is_reserve = FALSE AND is_active = TRUE'.
+- Given an account is toggled from reserve to non-reserve, the Safe-to-Spend metric recalculates immediately.",Highest,Reserves,reserves safe-to-spend algorithm backend
+Story,[Reserves] Emergency Reserve Visual Protection Badge and Warnings,"h3. User Story
+*As a* user logging an expense,
+*I want to* see a visual warning indicator if I select an emergency reserve account as payment source,
+*So that* I am deterred from accidentally tapping emergency funds for routine consumption.
+
+h3. Acceptance Criteria
+- Given the transaction entry form, when selecting an account with is_reserve=True, a prominent warning alert is rendered.
+- Given the confirmation action, the user must explicitly acknowledge spending from reserves.
+- Given completed transactions against a reserve account, they are tagged with a reserve-drawdown indicator in the ledger.",Medium,Reserves,reserves ux validation transactions
+Story,[Reserves] Calculate Emergency Runway Survival Months,"h3. User Story
+*As a* forward-thinking individual,
+*I want to* view my emergency runway expressed as months of living expenses covered by reserves,
+*So that* I know exactly how many months my household could survive without income.
+
+h3. Acceptance Criteria
+- Given total reserve account balances and a 3-month trailing average of essential living costs, the system computes: Runway Months = Reserves / Average Monthly Essentials.
+- Given zero historical expense history, the system displays an informative fallback state prompting data logging.
+- Given an increase in emergency reserves, the metric increases proportionately in real time.",Medium,Reserves,reserves runway metrics analytics
+Story,[Reserves] Segregated Total Reserve Balance Summary Tile,"h3. User Story
+*As a* user viewing dashboard summary,
+*I want to* view a dedicated 'Emergency Shield' card displaying aggregate reserve balance separated from spendable cash,
+*So that* I experience psychological peace of mind seeing my safety net without conflating it with spending money.
+
+h3. Acceptance Criteria
+- Given active reserve accounts, the dashboard renders a standalone 'Emergency Reserves' card showing total shielded capital.
+- Given zero designated reserve accounts, the card provides an actionable prompt explaining the benefits of creating an emergency cushion.
+- Given multi-currency accounts, balances are converted to the primary currency using configured rates.",Low,Reserves,reserves dashboard ui
+Story,[Categories] Create Custom Categories with Visual Tokens,"h3. User Story
+*As a* customizing user,
+*I want to* create custom expense and income categories with custom name, icon, and hex color token,
+*So that* transactions can be classified according to my specific spending taxonomy.
+
+h3. Acceptance Criteria
+- Given a category name, type ('expense' or 'income'), icon identifier, and color code, when submitted, a new category row is created.
+- Given an attempt to create a category with a duplicate name under the same parent/type, the system returns a validation error.
+- Given a created category, it becomes immediately selectable in transaction dropdowns with its icon and color.",Medium,Categories,categories customization crud
+Story,[Categories] Manage Nested Parent-Child Subcategory Hierarchies,"h3. User Story
+*As a* detailed expense tracker,
+*I want to* nest subcategories beneath a parent category (e.g. 'Groceries' under 'Food & Dining'),
+*So that* I can analyze high-level trends while preserving granular drill-down classification.
+
+h3. Acceptance Criteria
+- Given an existing parent category, when creating a child subcategory, parent_id is assigned to the parent's UUID.
+- Given a parent category deletion or archive attempt, child categories must either be reparented or cascaded safely.
+- Given analytical reporting, spending under child categories rolls up into the parent category total.",Medium,Categories,categories hierarchy taxonomy
+Story,[Categories] Seed Standard Default Financial Categories on Onboarding,"h3. User Story
+*As a* newly registered user,
+*I want to* have my account pre-populated with standard default categories (Housing, Utilities, Groceries, Dining, Salary),
+*So that* I can immediately log transactions without manually building a taxonomy from scratch.
+
+h3. Acceptance Criteria
+- Given a new user registration, the system automatically executes a database seeder inserting standard top-level categories and subcategories.
+- Given seeded categories, users retain full permission to edit names, change icons, or disable unwanted presets.
+- Given default category seeding, each category is scoped strictly to the new user's user_id.",High,Categories,categories onboarding seeding
+Story,[Categories] Soft-Archive Unused Categories,"h3. User Story
+*As a* user reorganizing budgets,
+*I want to* archive obsolete categories so they no longer clutter selection menus,
+*So that* historical records stay linked while simplifying day-to-day transaction input.
+
+h3. Acceptance Criteria
+- Given a category marked as archived (is_active=False), it is hidden from the transaction category selector.
+- Given historical transactions classified under the archived category, their category badges remain visible in the ledger.
+- Given filtering by archived categories in reports, historical data remains accessible.",Low,Categories,categories archive soft-delete
+Story,[Categories] Referential Integrity Protection on Category Deletion,"h3. User Story
+*As a* data integrity officer,
+*I want to* prevent hard-deletion of any category that is currently linked to existing transactions or budget envelopes,
+*So that* orphaned transactions and corrupted analytics are impossible.
+
+h3. Acceptance Criteria
+- Given a category with >= 1 linked transactions or budget allocations, when calling DELETE /api/categories/{id}, the API returns 409 Conflict.
+- Given a rejection, the API error message indicates how many transactions depend on the category and suggests archiving instead.
+- Given a category with zero references, hard deletion executes cleanly.",High,Categories,categories integrity database safety
+Story,[Transactions] Log Expense Transaction with Minor-Unit Integer Precision,"h3. User Story
+*As a* active shopper,
+*I want to* record an expense transaction specifying date, amount, account, category, merchant, and notes,
+*So that* my ledger stays accurate down to the exact paise with zero floating-point rounding errors.
+
+h3. Acceptance Criteria
+- Given an expense input of ₹450.75, the backend receives and stores the amount as 45075 integer paise (minor units).
+- Given successful creation, the linked account's balance is decremented by exactly 45075 paise.
+- Given ledger retrieval, the UI formats 45075 paise into ₹450.75 seamlessly.",Highest,Transactions,transactions ledger precision arithmetic
+Story,[Transactions] Record Income Inflow Transaction with Payor Tracking,"h3. User Story
+*As a* salaried individual or freelancer,
+*I want to* record an income transaction specifying date, amount in paise, receiving account, and payor source,
+*So that* my liquid assets increase and the inflow is tracked for monthly cash flow analysis.
+
+h3. Acceptance Criteria
+- Given an income input of ₹85,000.00, the system stores 8500000 paise with transaction_type='income'.
+- Given the transaction, the destination account balance increments by 8500000 paise.
+- Given cash flow calculation for the period, the inflow registers under total earned income.",Highest,Transactions,transactions income cashflow
+Story,[Transactions] Enforce Positive Amount Boundary Constraint on Transaction Inputs,"h3. User Story
+*As a* system validator,
+*I want to* strictly reject zero or negative transaction amounts at the API validation boundary,
+*So that* accidental negative entries cannot invert financial accounting logic or bypass balance controls.
+
+h3. Acceptance Criteria
+- Given an API payload with amount <= 0, the Pydantic schema validation returns 422 Unprocessable Entity with error 'Amount must be greater than zero'.
+- Given SQL schema constraints, a CHECK constraint (amount > 0) guarantees database-level integrity.
+- Given frontend input, the amount field prevents typing negative signs or zero values.",High,Transactions,transactions validation security
+Story,[Transactions] Multi-Dimensional Transaction Search and Filter Engine,"h3. User Story
+*As a* auditing user,
+*I want to* filter the transaction ledger simultaneously by date range, account, category, type, and keyword search,
+*So that* I can instantly locate specific historical purchases or investigate spending anomalies.
+
+h3. Acceptance Criteria
+- Given filter parameters (start_date, end_date, category_id, account_id, search_query), the API returns matching transactions.
+- Given a text search query, the search performs case-insensitive matching against merchant and notes fields.
+- Given no matching transactions, the UI displays a clean 'No transactions found' empty state with filter reset button.",High,Transactions,transactions search filtering backend
+Story,[Transactions] Offset-Based Ledger Pagination for High-Performance Queries,"h3. User Story
+*As a* long-time user with thousands of transactions,
+*I want to* load transactions in paginated increments (e.g. 50 items per page),
+*So that* the interface remains fast and responsive without downloading megabytes of ledger history at once.
+
+h3. Acceptance Criteria
+- Given GET /api/transactions with limit=50 and offset=0, the server returns the first 50 transactions and a total count header.
+- Given advancing to page 2 (offset=50), the next 50 records are fetched seamlessly.
+- Given database indexing on (user_id, transaction_date DESC), query execution time remains under 25ms.",Medium,Transactions,transactions pagination performance
+Story,[Transactions] Inline Transaction Editing with Atomic Balance Re-computation,"h3. User Story
+*As a* user correcting a receipt typo,
+*I want to* modify the amount, category, date, or merchant of an existing transaction,
+*So that* my ledger reflects correct figures while underlying account balances adjust automatically.
+
+h3. Acceptance Criteria
+- Given an expense edited from ₹500 to ₹700, the linked account balance is decremented by the delta of ₹200.
+- Given an account change on a transaction, the old account balance is credited and the new account balance is debited in a single atomic transaction.
+- Given successful edit, updated values appear immediately in ledger and budget progress bars.",High,Transactions,transactions edit atomicity ledger
+Story,[Transactions] Transaction Deletion with Cascade Balance Reversion,"h3. User Story
+*As a* user who logged a duplicate expense,
+*I want to* delete a transaction with full reversal of its balance impact,
+*So that* accidental entries can be wiped out completely with guaranteed mathematical consistency.
+
+h3. Acceptance Criteria
+- Given an expense transaction of ₹1,200 deleted via DELETE /api/transactions/{id}, the parent account balance increases by ₹1,200.
+- Given transaction deletion, linked budget consumption for the respective month decrements accordingly.
+- Given deletion confirmation dialog, the user must explicitly confirm before execution.",High,Transactions,transactions delete audit balance
+Story,[Transfers] Execute Atomic Two-Legged Internal Account Transfer,"h3. User Story
+*As a* user moving money between accounts,
+*I want to* transfer funds from my checking account to my savings account in a single atomic operation,
+*So that* both accounts update simultaneously without money disappearing or duplicating if an error occurs.
+
+h3. Acceptance Criteria
+- Given source account A and destination account B with amount ₹10,000, calling POST /api/transfers creates two ledger entries: debit on A and credit on B.
+- Given database failure during the second leg, the entire transaction rolls back via database ACID transaction.
+- Given successful transfer, both account balances reflect the updated balances immediately.",Highest,Transfers,transfers acid atomicity backend
+Story,[Transfers] Reject Transfers with Identical Source and Destination Accounts,"h3. User Story
+*As a* system validator,
+*I want to* reject transfer requests where the source account ID matches the destination account ID (`IDENTICAL_ACCOUNTS`),
+*So that* meaningless circular transactions and unnecessary audit noise are prevented.
+
+h3. Acceptance Criteria
+- Given from_account_id == to_account_id, the transfer service throws an IDENTICAL_ACCOUNTS domain exception.
+- Given this exception, the API returns HTTP 400 Bad Request with a clear human-readable error message.
+- Given frontend form, selecting a source account automatically disables that account in the destination selector.",High,Transfers,transfers validation error-handling
+Story,[Transfers] Bind Paired Transfer Legs via Unified Transfer Group UUID,"h3. User Story
+*As a* database architect,
+*I want to* bind the source debit transaction and destination credit transaction with a shared `transfer_group_id` UUID,
+*So that* the system always knows the exact counterparty leg for reconciliation and lifecycle management.
+
+h3. Acceptance Criteria
+- Given a completed transfer, both transaction rows share the exact same non-null transfer_group_id.
+- Given a query on either transaction leg, querying by transfer_group_id fetches both sides of the transfer.
+- Given transfer rows, transaction_type is set to 'transfer_out' and 'transfer_in' respectively.",High,Transfers,transfers schema data-integrity
+Story,[Transfers] Exclude Internal Transfers from Income and Expense Cash Flow Calculations,"h3. User Story
+*As a* budget analyst,
+*I want to* have the analytics engine ignore internal transfers when calculating total income and total expense metrics,
+*So that* moving money between my own pockets does not falsely inflate my perceived income or spending.
+
+h3. Acceptance Criteria
+- Given an internal transfer of ₹50,000 between bank accounts, monthly Total Income and Total Expense figures remain unchanged.
+- Given cash flow queries, SQL aggregations filter with 'WHERE transaction_type NOT IN ('transfer_out', 'transfer_in')'.
+- Given budget envelope calculations, transfers are strictly excluded from category spend.",Highest,Transfers,transfers analytics cashflow reporting
+Story,[Transfers] Atomic Cascade Deletion of Paired Transfer Legs,"h3. User Story
+*As a* user deleting a mistakenly recorded transfer,
+*I want to* delete one leg of a transfer and have the system automatically locate and delete the corresponding counterparty leg,
+*So that* orphan transfer legs cannot exist to create phantom imbalances in the ledger.
+
+h3. Acceptance Criteria
+- Given a transaction with a transfer_group_id, when deleting it, the backend finds the twin record by transfer_group_id and deletes both inside a single DB transaction.
+- Given the deletion, the source account is re-credited and the destination account is re-debited.
+- Given confirmation, the UI informs the user that both sides of the transfer will be reversed.",High,Transfers,transfers delete cascade rollback
+Story,[Transfers] Display Counterparty Account Indicators in Ledger View,"h3. User Story
+*As a* user reviewing ledger history,
+*I want to* see clear counterparty indications on transfer rows (e.g. 'Transfer to HDFC Savings' or 'Transfer from Cash'),
+*So that* I can immediately trace where money traveled without cross-referencing multiple screens.
+
+h3. Acceptance Criteria
+- Given a transfer_out transaction, the merchant/description column renders 'Transfer to [Destination Account Name]'.
+- Given a transfer_in transaction, the column renders 'Transfer from [Source Account Name]'.
+- Given clicking on the transfer row, a modal displays both legs of the transfer.",Medium,Transfers,transfers ui ledger ux
+Story,[Safe-to-Spend] Aggregate Real-Time Liquid Assets Across Operational Accounts,"h3. User Story
+*As a* Safe-to-Spend calculator,
+*I want to* sum balances across all active, non-reserve, liquid depository accounts in real time,
+*So that* the Safe-to-Spend calculation begins with a 100% accurate baseline of accessible capital.
+
+h3. Acceptance Criteria
+- Given accounts A (Active Bank: ₹50,000), B (Active Cash: ₹10,000), C (Reserve: ₹2,00,000), and D (Archived: ₹5,000), the calculated liquid baseline is strictly ₹60,000.
+- Given an instant transaction on account A, the liquid baseline recalculates dynamically.
+- Given credit card liabilities, the calculation deducts accrued negative balances.",Highest,Safe-to-Spend,safe-to-spend engine liquidity backend
+Story,[Safe-to-Spend] Deduct Mandatory 30-Day Recurring Commitments from Liquid Baseline,"h3. User Story
+*As a* disciplined planner,
+*I want to* have the Safe-to-Spend engine automatically subtract all upcoming recurring bills due within the 30-day horizon,
+*So that* money obligated for rent, EMIs, and utilities is never mistaken for discretionary spend.
+
+h3. Acceptance Criteria
+- Given liquid assets of ₹80,000 and 3 active recurring bills totaling ₹35,000 due within 30 days, committed bills are deducted (₹80,000 - ₹35,000 = ₹45,000).
+- Given a recurring bill whose next due date lies beyond the 30-day window, it is excluded from this deduction cycle.
+- Given a bill marked as paid during the cycle, its deduction is relieved from the committed total.",Highest,Safe-to-Spend,safe-to-spend commitments recurring math
+Story,[Safe-to-Spend] Incorporate Confirmed Expected Inflows into Spend Horizon,"h3. User Story
+*As a* salaried professional,
+*I want to* allow scheduled confirmed inflows (e.g. salary on the 1st) to be credited into the spendable calculation,
+*So that* my daily safe allowance reflects impending income rather than artificially starving my budget.
+
+h3. Acceptance Criteria
+- Given an active recurring income rule due within the active horizon, its expected minor-unit amount is added to the spend equation.
+- Given uncertain or variable income rules, users can toggle 'Include in Safe-to-Spend' per rule.
+- Given passing of the expected date without logged transaction, the engine alerts the user.",High,Safe-to-Spend,safe-to-spend inflows forecast
+Story,[Safe-to-Spend] Configurable Safety Buffer Percentage Cushion (5% - 20%),"h3. User Story
+*As a* conservative or aggressive budgeter,
+*I want to* adjust a safety buffer slider between 5% and 20% to hold back a portion of liquid funds,
+*So that* I have an automatic financial cushion protecting me from unexpected minor surprises.
+
+h3. Acceptance Criteria
+- Given a buffer setting of 10% on ₹50,000 net baseline, ₹5,000 is deducted as an untouchable buffer cushion.
+- Given user adjustment of the slider in settings, the Safe-to-Spend metric updates in real-time.
+- Given buffer value changes, the new percentage setting persists in user preferences.",High,Safe-to-Spend,safe-to-spend buffer settings ui
+Story,[Safe-to-Spend] Enforce Strict Zero-Clamping Guardrail for Deficit States,"h3. User Story
+*As a* system mathematician,
+*I want to* clamp the Safe-to-Spend result to zero whenever mandatory commitments exceed available liquid funds,
+*So that* the interface never displays misleading negative spendable numbers like '-₹15,000 Safe to Spend'.
+
+h3. Acceptance Criteria
+- Given liquid assets of ₹20,000 and mandatory bills of ₹30,000, the formula evaluates: max(0, 20000 - 30000) = 0.
+- Given a clamped zero result, the UI triggers an urgent deficit banner warning that bills exceed cash.
+- Given zero-clamped state, daily allowance is also set to ₹0.00.",Highest,Safe-to-Spend,safe-to-spend guardrails math safety
+Story,[Safe-to-Spend] Compute Daily Spend Allowance Across Remaining Horizon Days,"h3. User Story
+*As a* daily consumer,
+*I want to* view my Safe-to-Spend figure divided by the number of days remaining in the month (`Safe-to-Spend // Days Left`),
+*So that* I know my exact daily spending ceiling without needing to do mental math before buying lunch.
+
+h3. Acceptance Criteria
+- Given Safe-to-Spend of ₹15,000 and 10 days remaining in the current billing period, daily allowance displays as ₹1,500/day.
+- Given integer paise arithmetic, minor fractions are rounded conservatively (floor division) so daily spend cannot exceed total pool.
+- Given the transition to a new day at midnight, the days remaining counter decrements and daily allowance re-indexes.",High,Safe-to-Spend,safe-to-spend daily-allowance pacing
+Story,[Safe-to-Spend] Render Animated Circular Ring Gauge for Safe-to-Spend Metric,"h3. User Story
+*As a* visual learner,
+*I want to* see my Safe-to-Spend presented in an animated SVG ring gauge that changes color based on health,
+*So that* I can gauge my financial headroom in less than two seconds upon opening the app.
+
+h3. Acceptance Criteria
+- Given a healthy ratio, the ring animates smoothly with an emerald green stroke.
+- Given a tightening ratio, the stroke transitions to amber yellow; given critical deficit, it glows crimson red.
+- Given page load, the ring uses CSS stroke-dashoffset transitions with zero layout shift.",Medium,Safe-to-Spend,safe-to-spend ui animation dataviz
+Story,[Money Weather] Compute Cash Runway Health Ratio,"h3. User Story
+*As a* financial forecast engine,
+*I want to* calculate the Money Weather Runway Ratio as (Liquid Assets + Projected Inflows) / (Mandatory Bills + Prorated Discretionary),
+*So that* the system has an objective numerical foundation for weather classification.
+
+h3. Acceptance Criteria
+- Given all cashflow parameters, the engine computes the ratio with high float precision before categorizing.
+- Given mandatory commitments of ₹0, the ratio safely defaults to a maximum ceiling (e.g. 99.0) without divide-by-zero errors.
+- Given the computed ratio, the value feeds into the 3-tier categorization logic.",Highest,Money Weather,money-weather algorithm forecast
+Story,[Money Weather] Evaluate Three-Tier Money Weather State Classification,"h3. User Story
+*As a* app user,
+*I want to* have my financial climate classified as 'Sunny & Calm', 'Breezy & Tightening', or 'Storm Approaching',
+*So that* complex cashflow ratios are distilled into instant, emotionally intuitive feedback.
+
+h3. Acceptance Criteria
+- Given Runway Ratio >= 1.25, the state resolves to 'Comfortable' ('Sunny & Calm').
+- Given 1.00 <= Runway Ratio < 1.25, the state resolves to 'Tightening' ('Breezy & Tightening').
+- Given Runway Ratio < 1.00, the state resolves to 'At Risk' ('Storm Approaching').",Highest,Money Weather,money-weather classification logic
+Story,[Money Weather] Generate Plain-Language Narrative Summary for Current Weather,"h3. User Story
+*As a* user seeking actionable guidance,
+*I want to* read a dynamic plain-language narrative explaining WHY my weather is Sunny, Breezy, or Stormy,
+*So that* I understand the exact levers affecting my financial standing and what action to take.
+
+h3. Acceptance Criteria
+- Given a 'Tightening' state, narrative includes: 'Your commitments consume 88% of liquid funds. Avoid discretionary purchases until salary credit.'
+- Given an 'At Risk' state, narrative highlights: 'Commitments exceed liquid funds by ₹4,200. Consider deferring subscriptions or tapping reserves.'
+- Given a 'Comfortable' state, narrative celebrates: 'Your runway is healthy with a 25%+ cushion above all upcoming bills.'",High,Money Weather,money-weather narrative nlg ux
+Story,[Money Weather] Render Dynamic SVG Weather Hero Visual,"h3. User Story
+*As a* visual-first user,
+*I want to* view an animated SVG hero banner corresponding to the current Money Weather state,
+*So that* the dashboard feels inviting and human rather than like a dry accounting spreadsheet.
+
+h3. Acceptance Criteria
+- Given 'Sunny & Calm', an animated glowing sun with floating clouds is rendered.
+- Given 'Breezy & Tightening', wind swirls and drifting clouds appear with amber accents.
+- Given 'Storm Approaching', rain cloud SVGs with subtle lightning pulse animations display.
+- Given accessibility preferences (prefers-reduced-motion), complex animations halt gracefully.",Medium,Money Weather,money-weather svg frontend animation
+Story,[Money Weather] Interactive Safety Buffer Simulation Slider on Weather,"h3. User Story
+*As a* user modeling what-if scenarios,
+*I want to* adjust the safety buffer slider on the weather card to see how increasing my cushion changes the forecast,
+*So that* I can test my financial resiliency before making a large purchase or altering savings rates.
+
+h3. Acceptance Criteria
+- Given dragging the slider from 10% to 20%, the Money Weather recalculates in memory on the client.
+- Given a state transition during sliding, the weather visual and narrative cross-fade dynamically.
+- Given releasing the slider, a 'Save as default buffer' button appears.",Low,Money Weather,money-weather simulation interactive
+Story,[Money Weather] Mid-Month Income Shock Scenario Warning,"h3. User Story
+*As a* freelancer with irregular income,
+*I want to* receive an automatic weather downgrade alert if a projected client payment fails to materialize on schedule,
+*So that* I can quickly cut spending before a missed invoice spirals into an overdraft.
+
+h3. Acceptance Criteria
+- Given an expected inflow date that has passed without a matching credit transaction, the system recalculates Money Weather without the inflow.
+- Given the new ratio falling below 1.0, the weather shifts to 'Storm Approaching' with a dedicated notice.
+- Given the user re-scheduling or marking the invoice received, the forecast recovers.",Medium,Money Weather,money-weather alert cashflow
+Story,[Budgets] Create Monthly Category Budget Envelopes,"h3. User Story
+*As a* zero-based budgeter,
+*I want to* define a spending ceiling in minor units for a specific category in a designated calendar month,
+*So that* I can set intentional boundaries on spending categories like Dining, Entertainment, or Shopping.
+
+h3. Acceptance Criteria
+- Given category_id, period ('YYYY-MM'), and amount in paise, submitting creates a budget envelope.
+- Given amount <= 0, validation rejects the payload.
+- Given creation, the envelope appears in the active budget dashboard with 0% initial spend.",High,Budgets,budgets envelopes crud
+Story,[Budgets] Enforce Unique Constraint on Category-Period Budget Allocation,"h3. User Story
+*As a* database administrator,
+*I want to* prevent duplicate budget envelope entries for the same category within the same calendar month,
+*So that* users cannot accidentally create conflicting or double-allocated budgets.
+
+h3. Acceptance Criteria
+- Given an existing budget for Category 'Dining' in '2026-10', submitting another budget for the same category and month returns 409 Conflict.
+- Given database schema, a UNIQUE constraint on (user_id, category_id, period) enforces integrity.
+- Given frontend form, categories with existing allocations for the selected month are disabled in the creation picker.",High,Budgets,budgets integrity database constraint
+Story,[Budgets] Real-Time Category Spend Aggregation Against Envelopes,"h3. User Story
+*As a* budget tracker,
+*I want to* see real-time cumulative spend progress bars against each budget envelope,
+*So that* I can see how much money remains in each category envelope at any point during the month.
+
+h3. Acceptance Criteria
+- Given a ₹10,000 Dining budget and ₹4,200 in Dining expenses this month, the envelope displays ₹4,200 spent (42%) and ₹5,800 remaining.
+- Given a newly logged transaction, the respective budget progress bar updates immediately.
+- Given expenses exceeding the budget, the bar displays overspend in red (e.g. 115% spent).",High,Budgets,budgets progress aggregation real-time
+Story,[Budgets] Calculate 'Where You Should Be Today' Mid-Month Pacing Marker,"h3. User Story
+*As a* pacing-focused saver,
+*I want to* see an indicator marker on the budget progress bar showing the expected burn-rate for today's day of the month,
+*So that* I know if I am burning through my budget too quickly early in the month even if total spend is under 100%.
+
+h3. Acceptance Criteria
+- Given Day 15 of a 30-day month, the pacing marker sits at exactly 50.0% along the progress bar.
+- Given current spend is 65% on Day 15, the visual indicator highlights that spending is running 15% ahead of pace.
+- Given current spend is 40% on Day 15, the indicator indicates comfortable pacing with green styling.",High,Budgets,budgets pacing run-rate algorithm
+Story,[Budgets] Visual Burn-Rate Acceleration Alert,"h3. User Story
+*As a* disciplined spender,
+*I want to* receive a highlighted warning badge on envelopes whose burn-rate is > 20% ahead of calendar pace,
+*So that* I can curb spending mid-month before exhausting the category envelope prematurely.
+
+h3. Acceptance Criteria
+- Given an envelope where (spent_percentage - calendar_percentage) > 20%, an 'Over Pace' warning badge renders.
+- Given hovering over the badge, a tooltip explains: 'At this rate, your budget will run out on the 21st.'
+- Given spending slowing down later in the month, the warning badge clears automatically.",Medium,Budgets,budgets alerts run-rate ui
+Story,[Budgets] Projected Month-End Overrun Forecasting Engine,"h3. User Story
+*As a* proactive planner,
+*I want to* view projected month-end total spend based on linear extrapolation of current daily run-rate,
+*So that* I can see the financial destination I am heading toward if current habits persist.
+
+h3. Acceptance Criteria
+- Given ₹6,000 spent over first 10 days of a 30-day month, daily rate is ₹600/day, projecting ₹18,000 month-end spend.
+- Given an initial budget of ₹15,000, the system projects a ₹3,000 overrun.
+- Given days < 5 of the month, the forecast displays an early-cycle indicator acknowledging limited sample size.",Medium,Budgets,budgets forecasting analytics run-rate
+Story,[Budgets] Delete and Re-Allocate Budget Envelopes,"h3. User Story
+*As a* user adjusting financial priorities,
+*I want to* delete a budget envelope without deleting historical transactions in that category,
+*So that* I can unbind spending limits without losing transaction ledger records.
+
+h3. Acceptance Criteria
+- Given an active budget envelope, calling DELETE /api/budgets/{id} removes the envelope record.
+- Given envelope deletion, all historical and future transactions assigned to that category remain untouched in the ledger.
+- Given envelope removal, dashboard calculations update to reflect unallocated category status.",Low,Budgets,budgets crud delete
+Story,[Savings Goals] Create Target Milestone Savings Goals,"h3. User Story
+*As a* goal-oriented saver,
+*I want to* create a milestone savings goal with a target title, target amount in paise, target completion date, and linked funding account,
+*So that* I can visualize and systematically fund major life milestones like a home down-payment or vacation.
+
+h3. Acceptance Criteria
+- Given valid title, target amount in paise, and future target date, submitting persists a new goal record.
+- Given a target date in the past, the system rejects creation with a validation error.
+- Given successful creation, the goal appears in the Goals gallery with a 0% progress meter.",High,Savings Goals,goals milestones crud
+Story,[Savings Goals] Record Dedicated Goal Contributions with Balance Transfer,"h3. User Story
+*As a* saver setting aside money,
+*I want to* record a contribution toward a savings goal linked to an operational or reserve account,
+*So that* accumulated goal savings are tracked distinctly toward the target milestone.
+
+h3. Acceptance Criteria
+- Given an active goal, entering a contribution of ₹5,000 increments current_amount by 500000 paise.
+- Given an optional funding account selection, an internal transfer is automatically posted moving funds to the goal's designated vault.
+- Given contribution, the goal progress bar percentage re-indexes.",High,Savings Goals,goals contributions ledger
+Story,[Savings Goals] Calculate 3-Month Trailing Savings Velocity,"h3. User Story
+*As a* data-driven saver,
+*I want to* have the engine compute my average monthly net contribution velocity over the past 3 calendar months,
+*So that* I know my empirical savings pace rather than relying on unrealistic aspirations.
+
+h3. Acceptance Criteria
+- Given total contributions of ₹15,000, ₹20,000, and ₹25,000 across the past 3 months, 3-month savings velocity computes to ₹20,000/month.
+- Given a user with < 3 months of history, the engine computes average velocity across available logged months with an informational note.
+- Given negative net savings (withdrawals > deposits), velocity registers as 0 with a guidance warning.",High,Savings Goals,goals velocity algorithm analytics
+Story,[Savings Goals] Forecast Goal Completion Date Based on Empirical Velocity,"h3. User Story
+*As a* goal planner,
+*I want to* view the mathematically estimated completion date calculated as `Remaining Amount / Monthly Velocity`,
+*So that* I can see whether I am on track to achieve my goal before or after my intended deadline.
+
+h3. Acceptance Criteria
+- Given ₹60,000 remaining on a goal and a velocity of ₹10,000/month, the projected completion date is exactly 6 months from today.
+- Given the projected date is ahead of the target deadline, the goal displays an 'On Track' badge in emerald green.
+- Given the projected date is after the deadline, the goal displays 'Behind Schedule' along with the required monthly catch-up amount.",High,Savings Goals,goals forecasting velocity estimation
+Story,[Savings Goals] Visual Progress Fill Bar and Milestone Celebration Badges,"h3. User Story
+*As a* user seeking positive motivation,
+*I want to* see visual milestones celebrated at 25%, 50%, 75%, and 100% completion marks,
+*So that* I feel motivated to maintain my savings discipline through gamified visual feedback.
+
+h3. Acceptance Criteria
+- Given a goal reaching 100%, the UI triggers a celebratory milestone animation and marks the goal as Completed.
+- Given quarter-milestone crossings (25%, 50%, 75%), milestone badges unlock on the goal card.
+- Given completed status, the goal is moved to an 'Accomplished Goals' archive.",Low,Savings Goals,goals gamification ui animations
+Story,[Savings Goals] Goal Withdrawal and Emergency Repurposing,"h3. User Story
+*As a* user facing unexpected priority shift,
+*I want to* withdraw funds from a goal back into an operational account or delete an aborted goal,
+*So that* savings are not permanently locked and can be redirected when life circumstances change.
+
+h3. Acceptance Criteria
+- Given a goal with ₹40,000 saved, logging a withdrawal decrements current_amount and generates a reversal transfer.
+- Given deleting a goal with remaining funds, the system prompts the user to re-allocate the accumulated balance to an active account.
+- Given withdrawal, velocity metrics recalculate to reflect the adjusted net position.",Medium,Savings Goals,goals withdrawal flexibility
+Story,"[Recurring Radar] Define Recurring Commitment Rules (EMI, SIP, Rent, Subscriptions)","h3. User Story
+*As a* subscription organizer,
+*I want to* create a recurring payment rule with merchant, amount, frequency (daily, weekly, monthly, yearly), start date, and category,
+*So that* all my recurring financial obligations are registered for automated tracking and radar scanning.
+
+h3. Acceptance Criteria
+- Given recurring details, submitting via POST /api/recurring creates an active recurring rule.
+- Given frequency selection, the system supports weekly, monthly, quarterly, and annual cadences.
+- Given creation, the rule immediately feeds into the 30-day forward radar horizon.",High,Recurring Radar,recurring subscriptions rules crud
+Story,[Recurring Radar] Calculate Accurate Next Due Date Engine,"h3. User Story
+*As a* calendar engine,
+*I want to* automatically compute the exact next calendar due date taking into account variable month lengths and leap years,
+*So that* bills due on the 31st do not disappear in February or 30-day months.
+
+h3. Acceptance Criteria
+- Given a monthly rule on the 31st, for February the system clamps the due date to the 28th (or 29th in leap years).
+- Given payment completion for the current cycle, the next_due_date increments automatically to the subsequent period.
+- Given past due dates with unrecorded payments, the rule flags as 'Overdue'.",Highest,Recurring Radar,recurring dates calendar algorithm
+Story,[Recurring Radar] 30-Day Forward Calendar Radar View,"h3. User Story
+*As a* forward-looking planner,
+*I want to* view an interactive 30-day chronological radar list showing all upcoming commitments ordered by due date,
+*So that* I can see exactly which bills are landing over the next month and plan liquidity accordingly.
+
+h3. Acceptance Criteria
+- Given GET /api/recurring/radar, the API returns all obligations falling between today and today + 30 days.
+- Given the response, items are strictly ordered in ascending order of due date.
+- Given the list, the total sum of upcoming commitments is displayed as a header total.",High,Recurring Radar,recurring radar dashboard frontend
+Story,[Recurring Radar] Relative Urgency Highlighting on Radar Items,"h3. User Story
+*As a* busy professional,
+*I want to* see relative urgency tags on radar cards (e.g. 'Due Today', 'Due in 2 days', 'In 3 weeks'),
+*So that* immediate payment obligations stand out clearly from distant obligations.
+
+h3. Acceptance Criteria
+- Given a bill due on current calendar date, a high-priority red pill 'Due Today' displays.
+- Given a bill due in <= 3 days, an amber badge 'Due in X days' displays.
+- Given a bill due > 7 days away, a neutral badge displays with the scheduled date.",Medium,Recurring Radar,recurring ui badges urgency
+Story,[Recurring Radar] One-Click Quick Log of Recurring Bill to Transaction Ledger,"h3. User Story
+*As a* convenience seeker,
+*I want to* click 'Mark as Paid' on any radar item to automatically log the transaction in the ledger,
+*So that* I can clear bills from my radar and update my account balance with a single click without re-typing details.
+
+h3. Acceptance Criteria
+- Given clicking 'Mark as Paid' on a ₹2,500 broadband bill, a modal opens pre-filled with the exact amount, merchant, and category.
+- Given confirmation, an expense transaction is posted, account balance is debited, and the rule's next_due_date advances to next month.
+- Given quick logging, the bill is immediately removed from the active pending radar list.",High,Recurring Radar,recurring workflow automation ledger
+Story,[Analytics] Spending DNA Category Donut Breakdown Visualization,"h3. User Story
+*As a* visual budgeter,
+*I want to* view an interactive donut chart breaking down total expenses by parent category with percentage shares,
+*So that* I can immediately see which spending categories consume the largest portions of my income.
+
+h3. Acceptance Criteria
+- Given expenses across multiple categories in a billing period, the donut chart renders proportionate arc segments matching category color tokens.
+- Given hovering over an arc segment, a tooltip reveals category name, total amount in paise formatted in currency, and percentage share.
+- Given clicking a segment, the ledger below filters to display transactions strictly for that category.",Medium,Analytics,analytics spending-dna dataviz charts
+Story,[Analytics] Top Merchant Outflow Pareto Distribution,"h3. User Story
+*As a* spend auditor,
+*I want to* view a ranked leaderboard of my top 5 merchants by total spend for the selected billing cycle,
+*So that* I can identify specific commercial outlets or service providers where my cash drains fastest.
+
+h3. Acceptance Criteria
+- Given transaction data, the backend groups expenses by merchant string and sorts by sum(amount) DESC limit 5.
+- Given the leaderboard, each row shows merchant name, transaction count, total spent, and percentage of overall expenses.
+- Given clicking on a merchant row, the view drills down to individual purchases at that vendor.",Low,Analytics,analytics merchants pareto insights
+Story,[Data Portability] Stream RFC 4180 In-Memory CSV Transaction Export,"h3. User Story
+*As a* data portability advocate or tax filer,
+*I want to* export my entire transaction ledger as an RFC 4180 compliant CSV file streamed directly in-memory,
+*So that* I can analyze my financial records in Excel/Python or provide records to my accountant without server disk bloat.
+
+h3. Acceptance Criteria
+- Given GET /api/export/transactions/csv, the response streams CSV data using StreamingResponse with Content-Disposition attachment header.
+- Given fields containing commas, quotes, or newlines, the generator properly escapes them per RFC 4180 standards.
+- Given amounts in paise, the CSV output provides both minor-unit integer paise and decimal-formatted currency columns.",High,Data Portability,export csv streaming portability
+Story,[Data Portability] Export Complete Workspace State as Encrypted JSON Backup,"h3. User Story
+*As a* privacy-centric self-custody user,
+*I want to* download a full JSON snapshot of all my accounts, categories, transactions, budgets, goals, and recurring rules,
+*So that* I possess complete ownership and portable backups of my personal financial history.
+
+h3. Acceptance Criteria
+- Given GET /api/export/backup/json, the API bundles user data into a validated structured JSON schema.
+- Given sensitive authentication hashes, they are strictly stripped from the backup payload.
+- Given the download, the filename includes a clear ISO-8601 timestamp (e.g. klyro-backup-2026-10-29.json).",Medium,Data Portability,export json backup data-ownership
+Story,[Data Portability] One-Click Demo Sandbox Re-Seeding Endpoint,"h3. User Story
+*As a* evaluator or test engineer,
+*I want to* trigger a sandbox re-seeding command to populate the workspace with realistic sample financial data,
+*So that* I can explore all analytical dashboards, weather models, and run-rates immediately without manual data entry.
+
+h3. Acceptance Criteria
+- Given calling POST /api/demo/seed, the system populates sample accounts (Bank, Cash, Reserve), categories, 90 days of transactions, budgets, and goals.
+- Given existing demo data, the endpoint cleanly resets and repopulates the sandbox idempotently.
+- Given non-demo production accounts, safety guards ensure real user data cannot be overwritten by the seeder.",Low,Data Portability,demo testing onboarding seeding

@@ -5,7 +5,7 @@
 
 import { api } from '../api.js';
 import { store } from '../state.js';
-import { formatINR, formatDate } from '../utils/formatters.js';
+import { formatINR, formatDate, parseRupeesToPaise } from '../utils/formatters.js';
 import { renderTableSkeleton, renderErrorBanner, renderEmptyState } from '../components/loading.js';
 import { showToast } from '../components/toast.js';
 import { init3DTilt } from '../utils/animate.js';
@@ -136,7 +136,8 @@ export async function renderTransactionsView(container) {
                               <td>${badge}</td>
                               <td class="text-right font-serif font-bold text-sm ${color} num">${sign}${formatINR(tx.amount_minor)}</td>
                               <td class="text-right whitespace-nowrap">
-                                <button data-delete-id="${tx.id}" class="delete-tx-btn text-xs text-[#B84A39] hover:underline p-1 ml-2">Delete</button>
+                                <button data-edit-id="${tx.id}" class="edit-tx-btn text-xs text-[#2D7A58] hover:underline p-1">Edit</button>
+                                <button data-delete-id="${tx.id}" class="delete-tx-btn text-xs text-[#B84A39] hover:underline p-1 ml-1">Delete</button>
                               </td>
                             </tr>
                           `;
@@ -165,6 +166,48 @@ export async function renderTransactionsView(container) {
                   '🧾'
                 )
           }
+        </div>
+
+        <!-- Edit Transaction Modal -->
+        <div id="edit-tx-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+          <div class="modal-content max-w-md">
+            <div class="p-5 border-b border-[#E6E1D6] flex items-center justify-between bg-[#F6F3EB]">
+              <h3 class="font-serif text-lg font-bold text-[#1C1917]">Edit Transaction</h3>
+              <button id="close-edit-tx-btn" class="text-[#78716C] hover:text-[#1C1917] p-1 rounded">✕</button>
+            </div>
+            <form id="edit-tx-form" class="p-6 space-y-4">
+              <input type="hidden" id="edit-tx-id">
+              <div>
+                <label class="form-label" for="edit-tx-merchant">Merchant / Payee</label>
+                <input type="text" id="edit-tx-merchant" required class="form-input">
+              </div>
+              <div>
+                <label class="form-label" for="edit-tx-amount">Amount (₹)</label>
+                <input type="number" step="0.01" min="0.01" id="edit-tx-amount" required class="form-input font-serif font-bold">
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="form-label" for="edit-tx-category">Category</label>
+                  <select id="edit-tx-category" class="form-select">
+                    <option value="">No Category</option>
+                    ${categories.map((c) => `<option value="${c.id}">${c.name}</option>`).join('')}
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" for="edit-tx-date">Date</label>
+                  <input type="date" id="edit-tx-date" required class="form-input">
+                </div>
+              </div>
+              <div>
+                <label class="form-label" for="edit-tx-notes">Notes</label>
+                <input type="text" id="edit-tx-notes" class="form-input" placeholder="Optional notes">
+              </div>
+              <div class="pt-3 flex items-center justify-end gap-3 border-t border-[#E6E1D6]">
+                <button type="button" id="cancel-edit-tx-btn" class="btn btn-secondary text-xs">Cancel</button>
+                <button type="submit" class="btn btn-coral text-xs">Update Record</button>
+              </div>
+            </form>
+          </div>
         </div>
 
       </div>
@@ -236,6 +279,61 @@ export async function renderTransactionsView(container) {
       if (pagination.has_next) {
         currentPage += 1;
         renderTransactionsView(container);
+      }
+    });
+
+    // Edit Transaction Modal Wiring
+    const editModal = container.querySelector('#edit-tx-modal');
+    const closeEditBtn = container.querySelector('#close-edit-tx-btn');
+    const cancelEditBtn = container.querySelector('#cancel-edit-tx-btn');
+    const editForm = container.querySelector('#edit-tx-form');
+
+    const closeEditModal = () => editModal?.classList.remove('open');
+    closeEditBtn?.addEventListener('click', closeEditModal);
+    cancelEditBtn?.addEventListener('click', closeEditModal);
+
+    container.querySelectorAll('.edit-tx-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.getAttribute('data-edit-id'), 10);
+        const tx = items.find((t) => t.id === id);
+        if (!tx) return;
+
+        container.querySelector('#edit-tx-id').value = tx.id;
+        container.querySelector('#edit-tx-merchant').value = tx.merchant || tx.description || '';
+        container.querySelector('#edit-tx-amount').value = (tx.amount_minor / 100).toFixed(2);
+        container.querySelector('#edit-tx-category').value = tx.category_id || '';
+        container.querySelector('#edit-tx-date').value = tx.transaction_date;
+        container.querySelector('#edit-tx-notes').value = tx.notes || '';
+
+        editModal?.classList.add('open');
+      });
+    });
+
+    editForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = container.querySelector('#edit-tx-id').value;
+      const merchant = container.querySelector('#edit-tx-merchant').value.trim();
+      const amountVal = container.querySelector('#edit-tx-amount').value;
+      const categoryIdVal = container.querySelector('#edit-tx-category').value;
+      const dateVal = container.querySelector('#edit-tx-date').value;
+      const notes = container.querySelector('#edit-tx-notes').value.trim();
+
+      try {
+        const payload = {
+          merchant,
+          description: merchant,
+          amount_minor: parseRupeesToPaise(amountVal),
+          category_id: categoryIdVal ? parseInt(categoryIdVal, 10) : null,
+          transaction_date: dateVal,
+          notes: notes || null,
+        };
+
+        await api.updateTransaction(id, payload);
+        showToast('Transaction updated successfully.', 'success');
+        closeEditModal();
+        store.setState({ lastUpdated: Date.now() });
+      } catch (err) {
+        showToast(err.message || 'Failed to update transaction.', 'error');
       }
     });
 

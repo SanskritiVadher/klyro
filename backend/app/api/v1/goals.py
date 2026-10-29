@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.app.database import get_db
-from backend.app.models import Goal, GoalContribution, User
+from backend.app.models import Goal, GoalContribution, User, Account
 from backend.app.schemas import (
     GoalCreate,
     GoalUpdate,
@@ -43,6 +43,14 @@ def list_goals(current_user: User = Depends(get_current_user), db: Session = Dep
 @router.post("", response_model=GoalResponse, status_code=status.HTTP_201_CREATED)
 def create_goal(payload: GoalCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Create a new savings or milestone goal."""
+    if payload.linked_account_id:
+        acc = db.query(Account).filter(Account.id == payload.linked_account_id, Account.user_id == current_user.id).first()
+        if not acc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "ACCOUNT_NOT_FOUND", "message": "Linked account not found"}
+            )
+
     goal = Goal(
         user_id=current_user.id,
         name=payload.name,
@@ -97,3 +105,22 @@ def add_goal_contribution(
     db.commit()
     db.refresh(contrib)
     return contrib
+
+
+@router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_goal(
+    goal_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a goal and its contributions."""
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == current_user.id).first()
+    if not goal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "GOAL_NOT_FOUND", "message": "Goal not found"}
+        )
+    db.delete(goal)
+    db.commit()
+    return None
+

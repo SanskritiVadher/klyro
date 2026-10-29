@@ -32,9 +32,10 @@ def seed_demo_data(db: Session = None, reset: bool = True):
 
     try:
         if reset:
-            # Drop all and recreate schema cleanly
-            Base.metadata.drop_all(bind=engine)
-            Base.metadata.create_all(bind=engine)
+            # Drop all and recreate schema cleanly on target database engine
+            target_engine = db.get_bind() if db else engine
+            Base.metadata.drop_all(bind=target_engine)
+            Base.metadata.create_all(bind=target_engine)
 
         # 1. Demo User (clean up existing demo user if present)
         existing_user = db.query(User).filter_by(email="sanskriti@klyro.finance").first()

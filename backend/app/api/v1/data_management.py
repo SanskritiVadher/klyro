@@ -3,7 +3,7 @@ import io
 import json
 from datetime import date, datetime
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, Response, Body, status
+from fastapi import APIRouter, Depends, Response, Body, status, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.app.database import get_db, SessionLocal
@@ -219,7 +219,12 @@ def update_user_settings(
 
 @router.post("/management/reseed")
 def reseed_demo_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Reset and reseed demo data for the application."""
+    """Reset and reseed demo data for the application (Restricted to workspace owner)."""
+    if current_user.email != "sanskriti@klyro.finance":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "FORBIDDEN", "message": "Only the demonstration workspace owner can trigger a global demo reset."}
+        )
     # Commit any pending queries and close connection before reseeding
     db.close()
     seed_demo_data(reset=True)

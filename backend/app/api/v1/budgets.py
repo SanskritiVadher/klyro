@@ -49,6 +49,15 @@ def create_budget(
     db.flush()
 
     for alloc in payload.allocations:
+        cat = db.query(Category).filter(
+            Category.id == alloc.category_id,
+            (Category.user_id == current_user.id) | (Category.user_id == None)
+        ).first()
+        if not cat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "CATEGORY_NOT_FOUND", "message": f"Category {alloc.category_id} not found"}
+            )
         db.add(BudgetAllocation(
             budget_id=budget.id,
             category_id=alloc.category_id,

@@ -3,7 +3,7 @@
  * Consumes the versioned REST API (/api/v1) with typed error handling and credentials support.
  */
 
-const BASE_URL = '/api/v1';
+const BASE_URL = (typeof window !== 'undefined' && (window.KLYRO_API_BASE || localStorage.getItem('klyro_api_base'))) || '/api/v1';
 
 class ApiClient {
   constructor() {
@@ -115,6 +115,12 @@ class ApiClient {
     });
   }
 
+  async deleteAccount(accountId) {
+    return this.request(`/accounts/${accountId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // --- Categories ---
   async getCategories() {
     return this.request('/categories');
@@ -141,6 +147,13 @@ class ApiClient {
   async createTransaction(payload) {
     return this.request('/transactions', {
       method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateTransaction(transactionId, payload) {
+    return this.request(`/transactions/${transactionId}`, {
+      method: 'PATCH',
       body: JSON.stringify(payload),
     });
   }
@@ -175,6 +188,12 @@ class ApiClient {
     });
   }
 
+  async deleteBudget(budgetId) {
+    return this.request(`/budgets/${budgetId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // --- Goals ---
   async getGoals() {
     return this.request('/goals');
@@ -184,6 +203,12 @@ class ApiClient {
     return this.request('/goals', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteGoal(goalId) {
+    return this.request(`/goals/${goalId}`, {
+      method: 'DELETE',
     });
   }
 

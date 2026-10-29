@@ -36,6 +36,24 @@ def create_recurring_rule(
     db: Session = Depends(get_db),
 ):
     """Create a new recurring commitment rule."""
+    acc = db.query(Account).filter(Account.id == payload.account_id, Account.user_id == current_user.id).first()
+    if not acc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "ACCOUNT_NOT_FOUND", "message": "Target account not found"}
+        )
+
+    if payload.category_id:
+        cat = db.query(Category).filter(
+            Category.id == payload.category_id,
+            (Category.user_id == current_user.id) | (Category.user_id == None)
+        ).first()
+        if not cat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "CATEGORY_NOT_FOUND", "message": "Target category not found"}
+            )
+
     rule = RecurringRule(
         user_id=current_user.id,
         account_id=payload.account_id,

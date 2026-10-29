@@ -51,7 +51,7 @@ def update_category(
     """Update or archive a category."""
     cat = db.query(Category).filter(
         Category.id == category_id,
-        (Category.user_id == current_user.id) | (Category.user_id == None)
+        Category.user_id == current_user.id
     ).first()
     if not cat:
         raise HTTPException(

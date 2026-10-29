@@ -1,5 +1,5 @@
 from backend.app.schemas.common import ErrorDetail, ErrorResponse, PaginationMeta, PaginatedResponse
-from backend.app.schemas.user import UserCreate, UserLogin, UserUpdate, UserResponse, Token, TokenPayload
+from backend.app.schemas.user import UserCreate, UserLogin, UserUpdate, UserResponse, Token, TokenPayload, PasswordChange
 from backend.app.schemas.account import (
     AccountCreate,
     AccountUpdate,

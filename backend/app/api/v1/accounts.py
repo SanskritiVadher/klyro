@@ -133,3 +133,22 @@ def adjust_account_balance(
     resp = AccountResponse.model_validate(acc)
     resp.current_balance_minor = payload.new_balance_minor
     return resp
+
+
+@router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    account_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete an account and its associated transactions."""
+    acc = db.query(Account).filter(Account.id == account_id, Account.user_id == current_user.id).first()
+    if not acc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "ACCOUNT_NOT_FOUND", "message": "Account not found"}
+        )
+    db.delete(acc)
+    db.commit()
+    return None
+
