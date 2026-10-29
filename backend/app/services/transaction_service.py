@@ -48,10 +48,14 @@ def create_transaction_entry(db: Session, user_id: int, payload: TransactionCrea
         recurring_rule_id=payload.recurring_rule_id,
         notes=payload.notes,
     )
-    db.add(tx)
-    db.commit()
-    db.refresh(tx)
-    return tx
+    try:
+        db.add(tx)
+        db.commit()
+        db.refresh(tx)
+        return tx
+    except Exception:
+        db.rollback()
+        raise
 
 
 def execute_atomic_transfer(
@@ -111,8 +115,12 @@ def execute_atomic_transfer(
     )
 
 
-    db.add_all([leg1, leg2])
-    db.commit()
-    db.refresh(leg1)
-    db.refresh(leg2)
-    return leg1, leg2
+    try:
+        db.add_all([leg1, leg2])
+        db.commit()
+        db.refresh(leg1)
+        db.refresh(leg2)
+        return leg1, leg2
+    except Exception:
+        db.rollback()
+        raise

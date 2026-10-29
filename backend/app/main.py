@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.app.config import settings
@@ -30,17 +31,22 @@ app.add_middleware(
 # Unified Error Formatting Exception Handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    first_error = exc.errors()[0] if exc.errors() else {}
+    errors = exc.errors()
+    first_error = errors[0] if errors else {}
     field = ".".join(str(loc) for loc in first_error.get("loc", []))
+    msg = first_error.get("msg", "Invalid request parameters")
+    if msg.startswith("Value error, "):
+        msg = msg[len("Value error, "):]
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={
             "error": {
                 "code": "VALIDATION_ERROR",
-                "message": first_error.get("msg", "Invalid request parameters"),
+                "message": msg,
                 "details": {
                     "field": field,
-                    "errors": exc.errors()
+                    "errors": jsonable_encoder(errors)
                 }
             }
         }
@@ -65,6 +71,19 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
                 "code": code,
                 "message": message,
                 "details": details
+            }
+        }
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": str(exc) or "An internal server error occurred."
             }
         }
     )

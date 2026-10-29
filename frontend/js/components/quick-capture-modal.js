@@ -1,11 +1,12 @@
 /**
  * KLYRO — Quick-Capture Modal Component
  * Fast, keyboard-first transaction entry with reactive tab switching,
- * smart category suggestions, and atomic transfers.
+ * smart category suggestions, account-linked expenses/income, and atomic transfers.
  */
 
 import { api } from '../api.js';
 import { store } from '../state.js';
+import { router } from '../router.js';
 import { parseRupeesToPaise } from '../utils/formatters.js';
 import { showToast } from './toast.js';
 import { fireConfetti } from '../utils/animate.js';
@@ -26,18 +27,55 @@ const MERCHANT_SUGGESTION_MAP = [
 ];
 
 /**
- * Preload accounts and categories from backend
+ * Reload fresh accounts and categories from backend
  */
-async function ensureDataLoaded() {
+export async function reloadCaptureData() {
+  if (!api.isAuthenticated()) {
+    accountsCache = [];
+    categoriesCache = [];
+    return;
+  }
   try {
-    if (accountsCache.length === 0) {
-      accountsCache = await api.getAccounts();
-    }
-    if (categoriesCache.length === 0) {
-      categoriesCache = await api.getCategories();
-    }
+    const [accs, cats] = await Promise.all([
+      api.getAccounts().catch(() => []),
+      api.getCategories().catch(() => []),
+    ]);
+    accountsCache = accs || [];
+    categoriesCache = cats || [];
   } catch (err) {
-    console.warn('Could not preload accounts/categories for quick capture:', err);
+    console.warn('Could not reload accounts/categories for quick capture:', err);
+  }
+}
+
+/**
+ * Helper to render empty account state with a clear call-to-action
+ */
+function renderEmptyAccountWarning(message) {
+  return `
+    <div class="p-4 rounded-xl bg-[#FEF3C7] border border-[#FCD34D] text-[#92400E] space-y-2.5">
+      <div class="flex items-center gap-2 font-bold text-sm">
+        <span>⚠️</span> ${message || 'Add an account before recording a transaction'}
+      </div>
+      <p class="text-xs text-[#78350F] leading-relaxed">
+        You need at least one active payment or deposit account (such as a Bank, Cash, or UPI wallet) to record transactions.
+      </p>
+      <button type="button" id="go-to-create-acc-btn" class="btn btn-secondary text-xs px-3 py-1.5 bg-white border-[#D5CEBF] hover:bg-[#F6F3EB] font-semibold text-[#1C1917] shadow-xs">
+        + Connect / Add Account Now
+      </button>
+    </div>
+  `;
+}
+
+function wireEmptyAccountAction() {
+  const btn = document.getElementById('go-to-create-acc-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      document.getElementById('quick-capture-modal')?.classList.remove('open');
+      router.navigate('accounts');
+      setTimeout(() => {
+        document.getElementById('add-account-btn')?.click();
+      }, 250);
+    });
   }
 }
 
@@ -59,16 +97,28 @@ function renderFields(tabType, initialValues = {}) {
   const notesVal = initialValues.notes || '';
   const merchantVal = initialValues.merchant || '';
 
+  // 1. EXPENSE TAB
   if (tabType === 'expense') {
-    if (saveBtn) saveBtn.textContent = 'Save Expense';
+    if (saveBtn) {
+      saveBtn.textContent = 'Save Expense';
+      saveBtn.disabled = activeAccounts.length === 0;
+    }
 
-    const categoryOptions = expenseCategories
-      .map((c) => `<option value="${c.id}">${c.name}</option>`)
-      .join('');
+    if (activeAccounts.length === 0) {
+      fieldsContainer.innerHTML = renderEmptyAccountWarning('Add an account before recording an expense');
+      wireEmptyAccountAction();
+      return;
+    }
 
-    const accountOptions = activeAccounts
-      .map((a) => `<option value="${a.id}">${a.name} (${a.account_type})</option>`)
-      .join('');
+    const categoryOptions = [
+      '<option value="">Select category...</option>',
+      ...expenseCategories.map((c) => `<option value="${c.id}">${c.name}</option>`),
+    ].join('');
+
+    const accountOptions = [
+      '<option value="">Select payment account...</option>',
+      ...activeAccounts.map((a) => `<option value="${a.id}">${a.name} (${a.account_type})</option>`),
+    ].join('');
 
     fieldsContainer.innerHTML = `
       <!-- Amount -->
@@ -92,17 +142,17 @@ function renderFields(tabType, initialValues = {}) {
         </div>
       </div>
 
-      <!-- Category & Account -->
+      <!-- Category & Paid from Account -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="form-label" for="tx-category">Category</label>
-          <select id="tx-category" class="form-select">
+          <select id="tx-category" required class="form-select">
             ${categoryOptions}
           </select>
         </div>
         <div>
-          <label class="form-label" for="tx-account">Account / Payment</label>
-          <select id="tx-account" class="form-select">
+          <label class="form-label" for="tx-account">Paid from</label>
+          <select id="tx-account" required class="form-select">
             ${accountOptions}
           </select>
         </div>
@@ -129,16 +179,30 @@ function renderFields(tabType, initialValues = {}) {
     `;
 
     attachMerchantSuggester('expense');
-  } else if (tabType === 'income') {
-    if (saveBtn) saveBtn.textContent = 'Save Income';
+  } 
+  
+  // 2. INCOME TAB
+  else if (tabType === 'income') {
+    if (saveBtn) {
+      saveBtn.textContent = 'Save Income';
+      saveBtn.disabled = activeAccounts.length === 0;
+    }
 
-    const categoryOptions = incomeCategories
-      .map((c) => `<option value="${c.id}">${c.name}</option>`)
-      .join('');
+    if (activeAccounts.length === 0) {
+      fieldsContainer.innerHTML = renderEmptyAccountWarning('Add an account before recording income');
+      wireEmptyAccountAction();
+      return;
+    }
 
-    const accountOptions = activeAccounts
-      .map((a) => `<option value="${a.id}">${a.name} (${a.account_type})</option>`)
-      .join('');
+    const categoryOptions = [
+      '<option value="">Select income category...</option>',
+      ...incomeCategories.map((c) => `<option value="${c.id}">${c.name}</option>`),
+    ].join('');
+
+    const accountOptions = [
+      '<option value="">Select deposit account...</option>',
+      ...activeAccounts.map((a) => `<option value="${a.id}">${a.name} (${a.account_type})</option>`),
+    ].join('');
 
     fieldsContainer.innerHTML = `
       <!-- Amount -->
@@ -154,7 +218,7 @@ function renderFields(tabType, initialValues = {}) {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="form-label" for="tx-merchant">Source / Payer</label>
-          <input type="text" id="tx-merchant" required placeholder="e.g. Acme Corp, Freelance, Dividend" value="${merchantVal}" class="form-input">
+          <input type="text" id="tx-merchant" required placeholder="e.g. Acme Corp, Client, Dividend" value="${merchantVal}" class="form-input">
         </div>
         <div>
           <label class="form-label" for="tx-date">Date</label>
@@ -162,17 +226,17 @@ function renderFields(tabType, initialValues = {}) {
         </div>
       </div>
 
-      <!-- Category & Account -->
+      <!-- Category & Deposit to Account -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="form-label" for="tx-category">Income Category</label>
-          <select id="tx-category" class="form-select">
+          <select id="tx-category" required class="form-select">
             ${categoryOptions}
           </select>
         </div>
         <div>
-          <label class="form-label" for="tx-account">Deposit Account</label>
-          <select id="tx-account" class="form-select">
+          <label class="form-label" for="tx-account">Deposit to</label>
+          <select id="tx-account" required class="form-select">
             ${accountOptions}
           </select>
         </div>
@@ -186,19 +250,45 @@ function renderFields(tabType, initialValues = {}) {
     `;
 
     attachMerchantSuggester('income');
-  } else if (tabType === 'transfer') {
-    if (saveBtn) saveBtn.textContent = 'Save Transfer';
+  } 
+  
+  // 3. TRANSFER TAB
+  else if (tabType === 'transfer') {
+    if (saveBtn) {
+      saveBtn.textContent = 'Save Transfer';
+      saveBtn.disabled = activeAccounts.length < 2;
+    }
 
-    const fromOptions = activeAccounts
-      .map((a, idx) => `<option value="${a.id}" ${idx === 0 ? 'selected' : ''}>${a.name} (${a.account_type})</option>`)
-      .join('');
+    if (activeAccounts.length < 2) {
+      fieldsContainer.innerHTML = `
+        <div class="p-4 rounded-xl bg-[#FEF3C7] border border-[#FCD34D] text-[#92400E] space-y-2.5">
+          <div class="flex items-center gap-2 font-bold text-sm">
+            <span>⚠️</span> At least two accounts required for transfer
+          </div>
+          <p class="text-xs text-[#78350F] leading-relaxed">
+            You currently have ${activeAccounts.length} active account(s). You must connect at least two accounts (e.g. Bank and Wallet) to execute account-to-account transfers.
+          </p>
+          <button type="button" id="go-to-create-acc-btn" class="btn btn-secondary text-xs px-3 py-1.5 bg-white border-[#D5CEBF] hover:bg-[#F6F3EB] font-semibold text-[#1C1917] shadow-xs">
+            + Connect / Add Account Now
+          </button>
+        </div>
+      `;
+      wireEmptyAccountAction();
+      return;
+    }
 
-    const toOptions = activeAccounts
-      .map((a, idx) => {
+    const fromOptions = [
+      '<option value="">Select source account...</option>',
+      ...activeAccounts.map((a, idx) => `<option value="${a.id}" ${idx === 0 ? 'selected' : ''}>${a.name} (${a.account_type})</option>`),
+    ].join('');
+
+    const toOptions = [
+      '<option value="">Select destination account...</option>',
+      ...activeAccounts.map((a, idx) => {
         const isDefaultTo = activeAccounts.length > 1 ? idx === 1 : idx === 0;
         return `<option value="${a.id}" ${isDefaultTo ? 'selected' : ''}>${a.name} (${a.account_type})</option>`;
-      })
-      .join('');
+      }),
+    ].join('');
 
     fieldsContainer.innerHTML = `
       <!-- Amount -->
@@ -213,14 +303,14 @@ function renderFields(tabType, initialValues = {}) {
       <!-- From Account & To Account -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label class="form-label" for="tx-from-account">From Account</label>
-          <select id="tx-from-account" class="form-select">
+          <label class="form-label" for="tx-from-account">From account</label>
+          <select id="tx-from-account" required class="form-select">
             ${fromOptions}
           </select>
         </div>
         <div>
-          <label class="form-label" for="tx-to-account">To Account</label>
-          <select id="tx-to-account" class="form-select">
+          <label class="form-label" for="tx-to-account">To account</label>
+          <select id="tx-to-account" required class="form-select">
             ${toOptions}
           </select>
         </div>
@@ -245,7 +335,7 @@ function renderFields(tabType, initialValues = {}) {
 
     if (fromSelect && toSelect) {
       const handleAccountConflict = () => {
-        if (fromSelect.value === toSelect.value) {
+        if (fromSelect.value && toSelect.value && fromSelect.value === toSelect.value) {
           const alternate = activeAccounts.find((a) => String(a.id) !== fromSelect.value);
           if (alternate) {
             toSelect.value = String(alternate.id);
@@ -255,7 +345,7 @@ function renderFields(tabType, initialValues = {}) {
 
       fromSelect.addEventListener('change', handleAccountConflict);
       toSelect.addEventListener('change', () => {
-        if (fromSelect.value === toSelect.value) {
+        if (fromSelect.value && toSelect.value && fromSelect.value === toSelect.value) {
           showToast('Source and destination accounts must be different.', 'warning');
         }
       });
@@ -323,13 +413,13 @@ export function setTab(tabType) {
 }
 
 /**
- * Open the Quick Record modal and reset to Expense tab
+ * Open the Quick Record modal and refresh accounts & categories
  */
 export async function openQuickCaptureModal() {
   const modal = document.getElementById('quick-capture-modal');
   if (!modal) return;
 
-  await ensureDataLoaded();
+  await reloadCaptureData();
   setTab('expense');
 
   modal.classList.add('open');
@@ -348,10 +438,15 @@ export async function initQuickCaptureModal() {
   const form = document.getElementById('quick-capture-form');
 
   // Preload data
-  await ensureDataLoaded();
+  await reloadCaptureData();
 
   // Initialize with Expense tab
   setTab('expense');
+
+  // Clear cache whenever global store updates
+  store.subscribe('lastUpdated', () => {
+    reloadCaptureData();
+  });
 
   // Wire tab switcher buttons
   document.querySelectorAll('.tx-type-btn').forEach((btn) => {
@@ -387,8 +482,13 @@ export async function initQuickCaptureModal() {
         const fromAccountId = parseInt(document.getElementById('tx-from-account')?.value, 10);
         const toAccountId = parseInt(document.getElementById('tx-to-account')?.value, 10);
 
-        if (!fromAccountId || !toAccountId) {
-          showToast('Please select both from and to accounts.', 'warning');
+        if (!fromAccountId || isNaN(fromAccountId)) {
+          showToast('Please select the "From account" to transfer from.', 'warning');
+          return;
+        }
+
+        if (!toAccountId || isNaN(toAccountId)) {
+          showToast('Please select the "To account" to deposit into.', 'warning');
           return;
         }
 
@@ -397,17 +497,23 @@ export async function initQuickCaptureModal() {
           return;
         }
 
+        // Prevent duplicate submissions
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span> Executing Transfer...`;
+        }
+
         await api.createTransfer({
           from_account_id: fromAccountId,
           to_account_id: toAccountId,
           amount_minor: amountMinor,
           transaction_date: dateVal,
-          description: notesVal || 'Internal Transfer',
+          description: notesVal || 'Internal Account Transfer',
           notes: notesVal || null,
         });
 
         fireConfetti({ particleCount: 75, spread: 70, origin: { y: 0.55 } });
-        showToast(`Logged ₹${(amountMinor / 100).toFixed(2)} 🎉`, 'success');
+        showToast(`Transferred ₹${(amountMinor / 100).toFixed(2)} between accounts! 🎉`, 'success');
       } else {
         const accountId = parseInt(document.getElementById('tx-account')?.value, 10);
         const categoryId = parseInt(document.getElementById('tx-category')?.value, 10) || null;
@@ -415,9 +521,20 @@ export async function initQuickCaptureModal() {
         const paymentMethodEl = document.getElementById('tx-payment-method');
         const paymentMethod = paymentMethodEl ? paymentMethodEl.value : 'upi';
 
-        if (!accountId) {
-          showToast('Please select an account.', 'warning');
+        if (!accountId || isNaN(accountId)) {
+          showToast(type === 'expense' ? 'Please select a "Paid from" payment account.' : 'Please select a "Deposit to" account.', 'warning');
           return;
+        }
+
+        if (!categoryId && type === 'expense') {
+          showToast('Please select an expense category.', 'warning');
+          return;
+        }
+
+        // Prevent duplicate submissions
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span> Saving ${type}...`;
         }
 
         await api.createTransaction({
@@ -433,7 +550,7 @@ export async function initQuickCaptureModal() {
         });
 
         fireConfetti({ particleCount: 75, spread: 70, origin: { y: 0.55 } });
-        showToast(`Logged ₹${(amountMinor / 100).toFixed(2)} 🎉`, 'success');
+        showToast(`Logged ₹${(amountMinor / 100).toFixed(2)} ${type}! 🎉`, 'success');
       }
 
       // Checkmark delight feedback
@@ -449,7 +566,7 @@ export async function initQuickCaptureModal() {
         `;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 280));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Close modal and reset
       modal?.classList.remove('open');

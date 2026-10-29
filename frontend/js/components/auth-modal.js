@@ -362,6 +362,12 @@ function wireRegisterForm() {
       return;
     }
 
+    const hasDigitOrSpecial = /\d|[^a-zA-Z0-9]/.test(password);
+    if (!hasDigitOrSpecial) {
+      showAuthError('Password must contain at least one number or special character (e.g. 123, !, @, #).');
+      return;
+    }
+
     submitBtn.disabled = true;
     submitBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span> Creating workspace...`;
 

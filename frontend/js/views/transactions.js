@@ -23,7 +23,7 @@ export async function renderTransactionsView(container) {
   container.innerHTML = renderTableSkeleton(6);
 
   try {
-    const [txResponse, categories] = await Promise.all([
+    const [txResponse, categories, accounts] = await Promise.all([
       api.getTransactions({
         start_date: startDate,
         end_date: endDate,
@@ -35,6 +35,7 @@ export async function renderTransactionsView(container) {
         sort_order: currentSortOrder,
       }),
       api.getCategories(),
+      api.getAccounts().catch(() => []),
     ]);
 
     const items = txResponse.items;
@@ -194,9 +195,15 @@ export async function renderTransactionsView(container) {
                   </select>
                 </div>
                 <div>
-                  <label class="form-label" for="edit-tx-date">Date</label>
-                  <input type="date" id="edit-tx-date" required class="form-input">
+                  <label class="form-label" for="edit-tx-account">Paid from / Account</label>
+                  <select id="edit-tx-account" required class="form-select">
+                    ${accounts.map((a) => `<option value="${a.id}">${a.name} (${a.account_type})</option>`).join('')}
+                  </select>
                 </div>
+              </div>
+              <div>
+                <label class="form-label" for="edit-tx-date">Date</label>
+                <input type="date" id="edit-tx-date" required class="form-input">
               </div>
               <div>
                 <label class="form-label" for="edit-tx-notes">Notes</label>
@@ -302,6 +309,7 @@ export async function renderTransactionsView(container) {
         container.querySelector('#edit-tx-merchant').value = tx.merchant || tx.description || '';
         container.querySelector('#edit-tx-amount').value = (tx.amount_minor / 100).toFixed(2);
         container.querySelector('#edit-tx-category').value = tx.category_id || '';
+        container.querySelector('#edit-tx-account').value = tx.account_id || '';
         container.querySelector('#edit-tx-date').value = tx.transaction_date;
         container.querySelector('#edit-tx-notes').value = tx.notes || '';
 
@@ -315,6 +323,7 @@ export async function renderTransactionsView(container) {
       const merchant = container.querySelector('#edit-tx-merchant').value.trim();
       const amountVal = container.querySelector('#edit-tx-amount').value;
       const categoryIdVal = container.querySelector('#edit-tx-category').value;
+      const accountIdVal = container.querySelector('#edit-tx-account').value;
       const dateVal = container.querySelector('#edit-tx-date').value;
       const notes = container.querySelector('#edit-tx-notes').value.trim();
 
@@ -324,6 +333,7 @@ export async function renderTransactionsView(container) {
           description: merchant,
           amount_minor: parseRupeesToPaise(amountVal),
           category_id: categoryIdVal ? parseInt(categoryIdVal, 10) : null,
+          account_id: accountIdVal ? parseInt(accountIdVal, 10) : undefined,
           transaction_date: dateVal,
           notes: notes || null,
         };

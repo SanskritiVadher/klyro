@@ -601,5 +601,201 @@ def test_api_multi_user_strict_data_isolation():
     assert bob_dash["current_liquidity_minor"] == 100000  # only Bob's 100000 paise opening balance
 
 
+def test_transaction_recording_account_selection_and_transfers_e2e():
+    """
+    End-to-end verification of transaction recording, account selection, and transfers:
+    1. Create two eligible accounts for test user.
+    2. Record expense from Account 1 -> verify ledger & balance decrease.
+    3. Record income deposited to Account 2 -> verify ledger & balance increase.
+    4. Transfer money from Account 1 to Account 2 -> verify atomic debit & credit.
+    5. Verify transfer is NOT counted as income or expense in cash flow.
+    6. Verify persistence across requests.
+    7. Verify validation failure when account is missing.
+    8. Verify rejection when transferring between identical accounts.
+    9. Verify cross-user account submission is rejected (404).
+    10. Verify login, session token, and logout flow.
+    """
+    client = TestClient(app)
+
+    # 1. Register test user "Karan"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "name": "Karan Singhal",
+        "email": "karan.singhal@klyro.finance",
+        "password": "KaranPassword123!",
+    })
+    assert reg_res.status_code == 201
+    user_id = reg_res.json()["id"]
+
+    login_res = client.post("/api/v1/auth/login", json={
+        "email": "karan.singhal@klyro.finance",
+        "password": "KaranPassword123!",
+    })
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
+    auth_headers = {"Authorization": f"Bearer {token}"}
+
+    # Step 1: Create two eligible accounts
+    acc1_res = client.post("/api/v1/accounts", headers=auth_headers, json={
+        "name": "HDFC Salary Bank",
+        "account_type": "bank",
+        "opening_balance_minor": 5000000,  # ₹50,000.00
+    })
+    assert acc1_res.status_code == 201
+    acc1_id = acc1_res.json()["id"]
+
+    acc2_res = client.post("/api/v1/accounts", headers=auth_headers, json={
+        "name": "Paytm Wallet",
+        "account_type": "wallet",
+        "opening_balance_minor": 1000000,  # ₹10,000.00
+    })
+    assert acc2_res.status_code == 201
+    acc2_id = acc2_res.json()["id"]
+
+    # Verify initial balances
+    acc1_get = client.get(f"/api/v1/accounts/{acc1_id}", headers=auth_headers).json()
+    acc2_get = client.get(f"/api/v1/accounts/{acc2_id}", headers=auth_headers).json()
+    assert acc1_get["current_balance_minor"] == 5000000
+    assert acc2_get["current_balance_minor"] == 1000000
+
+    # Get a category for expense
+    cats = client.get("/api/v1/categories", headers=auth_headers).json()
+    groceries_cat = next((c for c in cats if "grocer" in c["name"].lower()), cats[0])
+    salary_cat = next((c for c in cats if "salary" in c["name"].lower()), cats[1])
+
+    # Step 2 & 3: Record an expense from Account 1
+    exp_res = client.post("/api/v1/transactions", headers=auth_headers, json={
+        "account_id": acc1_id,
+        "category_id": groceries_cat["id"],
+        "transaction_type": "expense",
+        "amount_minor": 500000,  # ₹5,000.00
+        "merchant": "Nature's Basket",
+        "transaction_date": "2026-10-16",
+        "payment_method": "debit_card",
+        "notes": "Weekly household essentials",
+    })
+    assert exp_res.status_code == 201
+    exp_data = exp_res.json()
+    assert exp_data["account_id"] == acc1_id
+    assert exp_data["amount_minor"] == 500000
+
+    # Verify Account 1 balance decreased by ₹5,000 (from ₹50,000 to ₹45,000)
+    acc1_after_exp = client.get(f"/api/v1/accounts/{acc1_id}", headers=auth_headers).json()
+    assert acc1_after_exp["current_balance_minor"] == 4500000
+
+    # Step 4 & 5: Record income deposited into Account 2
+    inc_res = client.post("/api/v1/transactions", headers=auth_headers, json={
+        "account_id": acc2_id,
+        "category_id": salary_cat["id"],
+        "transaction_type": "income",
+        "amount_minor": 2000000,  # ₹20,000.00
+        "merchant": "Consulting Payout",
+        "transaction_date": "2026-10-18",
+        "payment_method": "upi",
+        "notes": "Client project milestone",
+    })
+    assert inc_res.status_code == 201
+    inc_data = inc_res.json()
+    assert inc_data["account_id"] == acc2_id
+    assert inc_data["amount_minor"] == 2000000
+
+    # Verify Account 2 balance increased by ₹20,000 (from ₹10,000 to ₹30,000)
+    acc2_after_inc = client.get(f"/api/v1/accounts/{acc2_id}", headers=auth_headers).json()
+    assert acc2_after_inc["current_balance_minor"] == 3000000
+
+    # Step 6 & 7: Transfer ₹15,000 from Account 2 to Account 1
+    transfer_res = client.post("/api/v1/transactions/transfers", headers=auth_headers, json={
+        "from_account_id": acc2_id,
+        "to_account_id": acc1_id,
+        "amount_minor": 1500000,  # ₹15,000.00
+        "transaction_date": "2026-10-20",
+        "description": "Wallet to Bank Sweep",
+        "notes": "Surplus transfer",
+    })
+    assert transfer_res.status_code == 201
+    legs = transfer_res.json()
+    assert len(legs) == 2
+    assert legs[0]["transfer_group_id"] == legs[1]["transfer_group_id"]
+
+    # Verify balances after transfer:
+    # Account 1: ₹45,000 + ₹15,000 = ₹60,000 (6,000,000 paise)
+    # Account 2: ₹30,000 - ₹15,000 = ₹15,000 (1,500,000 paise)
+    acc1_after_transfer = client.get(f"/api/v1/accounts/{acc1_id}", headers=auth_headers).json()
+    acc2_after_transfer = client.get(f"/api/v1/accounts/{acc2_id}", headers=auth_headers).json()
+    assert acc1_after_transfer["current_balance_minor"] == 6000000
+    assert acc2_after_transfer["current_balance_minor"] == 1500000
+
+    # Step 7 (continued): Verify transfer is NOT counted as income or expense in dashboard cash flow
+    dash_res = client.get("/api/v1/dashboard?period=2026-10", headers=auth_headers).json()
+    # Income should strictly be ₹20,000 (not contaminated by the ₹15,000 transfer)
+    assert dash_res["period_income_minor"] == 2000000
+    # Expense should strictly be ₹5,000 (not contaminated by the ₹15,000 transfer)
+    assert dash_res["period_expense_minor"] == 500000
+    # Total liquidity = ₹60,000 + ₹15,000 = ₹75,000
+    assert dash_res["current_liquidity_minor"] == 7500000
+
+    # Step 8: Persistence across fresh query
+    ledger = client.get("/api/v1/transactions", headers=auth_headers).json()
+    assert ledger["pagination"]["total_records"] >= 4  # 1 exp + 1 inc + 2 transfer legs
+
+    # Step 9: Rejection when account is missing
+    bad_tx_no_acc = client.post("/api/v1/transactions", headers=auth_headers, json={
+        "category_id": groceries_cat["id"],
+        "transaction_type": "expense",
+        "amount_minor": 10000,
+        "transaction_date": "2026-10-21",
+    })
+    assert bad_tx_no_acc.status_code == 422  # validation error (missing account_id)
+
+    # Step 10: Rejection when transferring between identical accounts
+    bad_transfer_same = client.post("/api/v1/transactions/transfers", headers=auth_headers, json={
+        "from_account_id": acc1_id,
+        "to_account_id": acc1_id,
+        "amount_minor": 50000,
+        "transaction_date": "2026-10-21",
+    })
+    assert bad_transfer_same.status_code == 400
+    assert bad_transfer_same.json()["error"]["code"] == "IDENTICAL_ACCOUNTS"
+
+    # Step 11: User cannot submit transaction or transfer with another user's account ID
+    # Register "Sneha"
+    sneha_reg = client.post("/api/v1/auth/register", json={
+        "name": "Sneha Roy",
+        "email": "sneha.roy@klyro.finance",
+        "password": "SnehaPassword123!",
+    })
+    sneha_token = create_access_token(subject=sneha_reg.json()["id"])
+    sneha_headers = {"Authorization": f"Bearer {sneha_token}"}
+
+    # Sneha attempts to record transaction on Karan's account -> 404
+    sneha_tamper_tx = client.post("/api/v1/transactions", headers=sneha_headers, json={
+        "account_id": acc1_id,
+        "transaction_type": "expense",
+        "amount_minor": 10000,
+        "transaction_date": "2026-10-21",
+    })
+    assert sneha_tamper_tx.status_code == 404
+    assert sneha_tamper_tx.json()["error"]["code"] == "ACCOUNT_NOT_FOUND"
+
+    # Sneha attempts transfer from Karan's account -> 404
+    sneha_acc = client.post("/api/v1/accounts", headers=sneha_headers, json={
+        "name": "Sneha Savings",
+        "account_type": "bank",
+        "opening_balance_minor": 50000,
+    }).json()
+
+    sneha_steal = client.post("/api/v1/transactions/transfers", headers=sneha_headers, json={
+        "from_account_id": acc1_id,
+        "to_account_id": sneha_acc["id"],
+        "amount_minor": 100000,
+        "transaction_date": "2026-10-21",
+    })
+    assert sneha_steal.status_code == 404
+    assert sneha_steal.json()["error"]["code"] == "ACCOUNT_NOT_FOUND"
+
+    # Step 12: Logout terminates session
+    logout_res = client.post("/api/v1/auth/logout", headers=auth_headers)
+    assert logout_res.status_code == 200
+
+
 
 
