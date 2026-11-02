@@ -285,12 +285,13 @@ export async function renderAccountsView(container) {
         if (ctxAccounts && accounts.length > 0) {
           const accLabels = accounts.map((a) => (a.is_reserve ? `${a.name} (Reserve)` : a.name));
           const accBalances = accounts.map((a) => (a.current_balance_minor || 0) / 100);
+          const isSunset = document.documentElement.getAttribute('data-theme') === 'sunset';
           const accColors = accounts.map((a) => {
             if (a.account_type === 'credit_card') {
-              return (a.current_balance_minor || 0) < 0 ? '#D45644' : '#2D7A58';
+              return (a.current_balance_minor || 0) < 0 ? (isSunset ? '#F87171' : '#D45644') : (isSunset ? '#34D399' : '#2D7A58');
             }
-            if (a.is_reserve) return '#C87D55'; // Burnt coral / amber tint for reserve
-            return (a.current_balance_minor || 0) >= 0 ? '#2D7A58' : '#D45644';
+            if (a.is_reserve) return isSunset ? '#F59E0B' : '#C87D55'; // Amber highlight for reserve
+            return (a.current_balance_minor || 0) >= 0 ? (isSunset ? '#34D399' : '#2D7A58') : (isSunset ? '#F87171' : '#D45644');
           });
 
           accountsChartInstance = new Chart(ctxAccounts, {
@@ -314,7 +315,9 @@ export async function renderAccountsView(container) {
               plugins: {
                 legend: { display: false },
                 tooltip: {
-                  backgroundColor: '#1C1917',
+                  backgroundColor: isSunset ? '#27211C' : '#1C1917',
+                  borderColor: isSunset ? '#473C32' : 'transparent',
+                  borderWidth: isSunset ? 1 : 0,
                   padding: 10,
                   cornerRadius: 8,
                   titleFont: { family: "'Plus Jakarta Sans', sans-serif", size: 12, weight: '700' },
@@ -329,10 +332,10 @@ export async function renderAccountsView(container) {
               },
               scales: {
                 y: {
-                  grid: { color: '#E6E1D6' },
+                  grid: { color: isSunset ? '#332B24' : '#E6E1D6' },
                   ticks: {
                     font: { family: "'Plus Jakarta Sans', sans-serif", size: 10 },
-                    color: '#78716C',
+                    color: isSunset ? '#9E9486' : '#78716C',
                     callback: (val) => formatCompactINR(val * 100),
                   },
                 },
@@ -340,7 +343,7 @@ export async function renderAccountsView(container) {
                   grid: { display: false },
                   ticks: {
                     font: { family: "'Plus Jakarta Sans', sans-serif", size: 10 },
-                    color: '#1C1917',
+                    color: isSunset ? '#F8F4EC' : '#1C1917',
                   },
                 },
               },

@@ -148,24 +148,39 @@ export function renderErrorBanner(errorMessage, onRetryFnName = 'location.reload
   `;
 }
 
+import { renderMascot } from './mascot.js';
+
 /**
- * Friendly Empty State with a calm, tactile editorial vector illustration
+ * Friendly Empty State with Klyro's mascot ("Professor Kly") or calm tactile illustration
  */
-export function renderEmptyState(title, description, actionText = null, actionHandler = null, emoji = '🌱') {
+export function renderEmptyState(title, description, actionText = null, actionHandler = null, mascotPose = 'thinking') {
+  const isMascotPose = ['welcoming', 'thinking', 'celebrating', 'encouraging', 'explaining', 'resting'].includes(mascotPose);
+
   return `
-    <div class="fade-up-card paper-card p-10 md:p-14 text-center max-w-md mx-auto my-8 space-y-4 border border-[#E6E1D6]">
-      <!-- Friendly Editorial Vector / Emoji Container -->
-      <div class="w-16 h-16 rounded-2xl bg-[#F6F3EB] border border-[#E6E1D6] mx-auto flex items-center justify-center text-3xl shadow-xs">
-        <span>${emoji}</span>
+    <div class="fade-up-card paper-card p-10 md:p-14 text-center max-w-md mx-auto my-8 space-y-4 border border-[var(--border-subtle,#E6E1D6)]">
+      <!-- Mascot Container -->
+      <div class="mx-auto flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+           onclick="if(window.KYLRO_OWL && typeof window.KYLRO_OWL.speak === 'function'){ window.KYLRO_OWL.speak('Nothing here yet. Add your first spend and I\'ll keep track for you.', { pose: 'encouraging', speakAloud: true }); }"
+           title="Click to hear Professor Kly">
+        ${
+          isMascotPose
+            ? renderMascot(mascotPose, 'w-20 h-20')
+            : `<div class="w-16 h-16 rounded-2xl bg-[#F6F3EB] border border-[#E6E1D6] mx-auto flex items-center justify-center text-3xl shadow-xs">
+                <span>${mascotPose}</span>
+               </div>`
+        }
       </div>
-      <div>
+      <div class="space-y-2">
         <h4 class="font-serif text-lg font-bold text-[#1C1917] tracking-tight">${title}</h4>
-        <p class="text-xs text-[#78716C] leading-relaxed max-w-sm mx-auto mt-1">${description}</p>
+        <p class="text-xs text-[#78716C] leading-relaxed max-w-sm mx-auto">${description}</p>
+        <p class="text-[11px] italic text-[#78716C] bg-[#F6F3EB] py-1 px-3 rounded-full inline-block border border-[var(--border-subtle,#E6E1D6)]">
+          "Nothing here yet. Add your first spend and I'll keep track for you."
+        </p>
       </div>
       ${
         actionText
           ? `<div class="pt-2">
-              <button onclick="${actionHandler || ''}" class="btn btn-coral text-xs shadow-xs hover:shadow-sm">
+              <button onclick="${actionHandler || ''}" class="btn btn-coral text-xs shadow-xs hover:shadow-sm cursor-pointer">
                 ${actionText}
               </button>
             </div>`

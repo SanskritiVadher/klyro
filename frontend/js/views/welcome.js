@@ -8,16 +8,23 @@ import { api } from '../api.js';
 import { router } from '../router.js';
 import { openAuthModal } from '../components/auth-modal.js';
 import { showToast } from '../components/toast.js';
+import { renderMascot } from '../components/mascot.js';
 
 export function renderWelcomeView(container) {
   container.innerHTML = `
     <div class="max-w-6xl mx-auto space-y-16 py-6 sm:py-10 px-2 sm:px-4">
 
-      <!-- Hero Section -->
+      <!-- Hero Section with Mascot Welcome -->
       <section class="text-center space-y-6 max-w-3xl mx-auto pt-4 sm:pt-8">
+        <div class="flex items-center justify-center gap-3">
+          <div class="cursor-pointer hover:scale-105 transition-transform" id="welcome-mascot-badge" title="Meet Kly, the Klyro financial guide!">
+            ${renderMascot('welcoming', 'w-16 h-16 sm:w-20 sm:h-20')}
+          </div>
+        </div>
+
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FDEDE8] border border-[#F7C6BE] text-[#D45644] text-xs font-semibold tracking-wide">
           <span class="w-2 h-2 rounded-full bg-[#D45644] animate-pulse"></span>
-          Klyro Financial Intelligence
+          Klyro Financial Intelligence · Guided by Kly
         </div>
 
         <h1 class="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-[#1C1917] leading-tight">
@@ -225,6 +232,13 @@ export function renderWelcomeView(container) {
         btn.disabled = false;
         btn.innerHTML = `<span>⚡ Try Live Demo</span>`;
       }
+    }
+  });
+
+  // Mascot click triggers animated intro
+  document.getElementById('welcome-mascot-badge')?.addEventListener('click', () => {
+    if (window.KLYRO_MASCOT && typeof window.KLYRO_MASCOT.playIntro === 'function') {
+      window.KLYRO_MASCOT.playIntro(true);
     }
   });
 }

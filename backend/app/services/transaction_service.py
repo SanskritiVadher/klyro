@@ -15,7 +15,17 @@ from backend.app.schemas.transaction import TransactionCreate, TransferCreate, T
 
 def create_transaction_entry(db: Session, user_id: int, payload: TransactionCreate) -> Transaction:
     """Create a single expense, income, or refund transaction."""
-    # Verify account ownership
+    # Prevent creating single-legged orphaned transfers through the standard endpoint
+    if payload.transaction_type == "transfer":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_TRANSACTION_TYPE",
+                "message": "Transfers must be recorded via POST /api/v1/transactions/transfers to preserve double-entry atomic balance."
+            }
+        )
+
+    # Verify account ownership and active status
     account = db.query(Account).filter(Account.id == payload.account_id, Account.user_id == user_id).first()
     if not account:
         raise HTTPException(
@@ -23,13 +33,16 @@ def create_transaction_entry(db: Session, user_id: int, payload: TransactionCrea
             detail={"code": "ACCOUNT_NOT_FOUND", "message": "Target account does not exist or access denied"}
         )
 
-    # Verify category if provided
+    # Verify category ownership if provided (must belong to user or be a system default category)
     if payload.category_id:
-        category = db.query(Category).filter(Category.id == payload.category_id).first()
+        category = db.query(Category).filter(
+            Category.id == payload.category_id,
+            (Category.user_id == user_id) | (Category.user_id.is_(None))
+        ).first()
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "CATEGORY_NOT_FOUND", "message": "Selected category does not exist"}
+                detail={"code": "CATEGORY_NOT_FOUND", "message": "Selected category does not exist or access denied"}
             )
 
     tx = Transaction(
@@ -84,7 +97,16 @@ def execute_atomic_transfer(
             detail={"code": "ACCOUNT_NOT_FOUND", "message": "One or both transfer accounts not found"}
         )
 
-    transfer_uuid = str(uuid.uuid4())
+    # Idempotency: If transfer_group_id is supplied and was already recorded, return existing legs
+    if payload.transfer_group_id:
+        existing_legs = db.query(Transaction).filter(
+            Transaction.user_id == user_id,
+            Transaction.transfer_group_id == payload.transfer_group_id
+        ).order_by(Transaction.id.asc()).all()
+        if len(existing_legs) == 2:
+            return existing_legs[0], existing_legs[1]
+
+    transfer_uuid = payload.transfer_group_id or str(uuid.uuid4())
 
     leg1 = Transaction(
         user_id=user_id,

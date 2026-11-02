@@ -169,14 +169,16 @@ export async function renderInsightsView(container) {
         const incomeValues = cashFlowData.timeline.map((t) => t.income_minor / 100);
         const expenseValues = cashFlowData.timeline.map((t) => t.expense_minor / 100);
 
+        const isSunset = document.documentElement.getAttribute('data-theme') === 'sunset';
+
         // Vibrant brand gradients
         const gradIncome = ctxCashFlow.createLinearGradient(0, 0, 0, 260);
-        gradIncome.addColorStop(0, '#3AA876');
-        gradIncome.addColorStop(1, '#2D7A58');
+        gradIncome.addColorStop(0, isSunset ? '#4ADE80' : '#3AA876');
+        gradIncome.addColorStop(1, isSunset ? '#10B981' : '#2D7A58');
 
         const gradExpense = ctxCashFlow.createLinearGradient(0, 0, 0, 260);
-        gradExpense.addColorStop(0, '#E87361');
-        gradExpense.addColorStop(1, '#D45644');
+        gradExpense.addColorStop(0, isSunset ? '#F87171' : '#E87361');
+        gradExpense.addColorStop(1, isSunset ? '#DC2626' : '#D45644');
 
         incomeExpenseChartInstance = new Chart(ctxCashFlow, {
           type: 'bar',
@@ -208,14 +210,16 @@ export async function renderInsightsView(container) {
                 position: 'top',
                 labels: {
                   font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: '600' },
-                  color: '#1C1917',
+                  color: isSunset ? '#F8F4EC' : '#1C1917',
                   usePointStyle: true,
                   pointStyle: 'circle',
                   boxWidth: 8,
                 },
               },
               tooltip: {
-                backgroundColor: '#1C1917',
+                backgroundColor: isSunset ? '#27211C' : '#1C1917',
+                borderColor: isSunset ? '#473C32' : 'transparent',
+                borderWidth: isSunset ? 1 : 0,
                 padding: 10,
                 cornerRadius: 8,
                 titleFont: { family: "'Plus Jakarta Sans', sans-serif", size: 12, weight: '700' },
@@ -231,10 +235,10 @@ export async function renderInsightsView(container) {
             scales: {
               y: {
                 beginAtZero: true,
-                grid: { color: '#E6E1D6' },
+                grid: { color: isSunset ? '#332B24' : '#E6E1D6' },
                 ticks: {
                   font: { family: "'Plus Jakarta Sans', sans-serif", size: 10 },
-                  color: '#78716C',
+                  color: isSunset ? '#9E9486' : '#78716C',
                   callback: (val) => formatCompactINR(val * 100),
                 },
               },
@@ -242,7 +246,7 @@ export async function renderInsightsView(container) {
                 grid: { display: false },
                 ticks: {
                   font: { family: "'Plus Jakarta Sans', sans-serif", size: 10 },
-                  color: '#78716C',
+                  color: isSunset ? '#D6CEC3' : '#78716C',
                 },
               },
             },

@@ -106,6 +106,15 @@ class Router {
 
       const handler = this.routes.get(route);
       if (this.container && typeof handler === 'function') {
+        // Destroy existing Chart.js instances inside container to prevent memory leaks
+        if (typeof Chart !== 'undefined' && Chart.getChart) {
+          const canvases = this.container.querySelectorAll('canvas');
+          canvases.forEach(c => {
+            const chart = Chart.getChart(c);
+            if (chart) chart.destroy();
+          });
+        }
+
         this.container.classList.remove('view-enter');
         void this.container.offsetWidth; // Trigger reflow
         this.container.classList.add('view-enter');

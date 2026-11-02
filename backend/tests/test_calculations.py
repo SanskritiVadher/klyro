@@ -261,3 +261,91 @@ def test_calculate_liquid_assets_excludes_reserve_account(test_db):
     assert liquid != 25500000
 
 
+def test_calculate_budget_performance_deducts_refunds_correctly(test_db):
+    """Verify Phase 4 Task 4: Budget performance accurately offsets returns/refunds against category expenses."""
+    user = User(name="Refund Budget User", email="refund_budget@test.com", password_hash="hash")
+    test_db.add(user)
+    test_db.commit()
+
+    cat = Category(user_id=user.id, name="Shopping", category_type="expense")
+    acc = Account(user_id=user.id, name="Checking", account_type="bank", opening_balance_minor=1000000)
+    test_db.add_all([cat, acc])
+    test_db.commit()
+
+    budget = Budget(
+        user_id=user.id,
+        name="October Shopping Budget",
+        period_type="monthly",
+        start_date=date(2026, 10, 1),
+        end_date=date(2026, 10, 31),
+        total_limit_minor=1000000,
+    )
+    test_db.add(budget)
+    test_db.commit()
+
+    alloc = BudgetAllocation(
+        budget_id=budget.id,
+        category_id=cat.id,
+        allocated_amount_minor=600000,  # ₹6,000 allocated
+    )
+    test_db.add(alloc)
+    test_db.commit()
+
+    # 1. Purchase ₹4,000 (400000 paise)
+    tx_exp = Transaction(
+        user_id=user.id,
+        account_id=acc.id,
+        category_id=cat.id,
+        transaction_type="expense",
+        amount_minor=400000,
+        transaction_date=date(2026, 10, 10),
+    )
+    # 2. Return / Refund ₹1,500 (150000 paise)
+    tx_ref = Transaction(
+        user_id=user.id,
+        account_id=acc.id,
+        category_id=cat.id,
+        transaction_type="refund",
+        amount_minor=150000,
+        transaction_date=date(2026, 10, 12),
+    )
+    test_db.add_all([tx_exp, tx_ref])
+    test_db.commit()
+
+    perf = calculate_budget_performance(test_db, budget.id, as_of_date=date(2026, 10, 15))
+    assert perf is not None
+    # Net spent should be 4,000 - 1,500 = ₹2,500 (250000 paise), NOT 4,000!
+    assert perf["total_spent_minor"] == 250000
+    assert perf["categories"][0]["spent_minor"] == 250000
+    assert perf["categories"][0]["remaining_minor"] == 350000  # 6,000 - 2,500 = 3,500
+    assert perf["categories"][0]["percent_spent"] == 41.7
+    assert perf["categories"][0]["pace_status"] == "comfortable"
+
+
+def test_calculate_net_cash_flow_refund_order_invariance(test_db):
+    """Verify Phase 4 Task 4: Cash flow netting is mathematically exact even if refund appears before expense."""
+    user = User(name="Order Invariance User", email="order_inv@test.com", password_hash="hash")
+    test_db.add(user)
+    test_db.commit()
+
+    acc = Account(user_id=user.id, name="Checking", account_type="bank", opening_balance_minor=1000000)
+    test_db.add(acc)
+    test_db.commit()
+
+    # Refund recorded on Oct 2 (before expense on Oct 5)
+    tx_ref = Transaction(user_id=user.id, account_id=acc.id, transaction_type="refund", amount_minor=300000, transaction_date=date(2026, 10, 2))
+    # Expense recorded on Oct 5
+    tx_exp = Transaction(user_id=user.id, account_id=acc.id, transaction_type="expense", amount_minor=500000, transaction_date=date(2026, 10, 5))
+    # Income on Oct 1
+    tx_inc = Transaction(user_id=user.id, account_id=acc.id, transaction_type="income", amount_minor=1000000, transaction_date=date(2026, 10, 1))
+
+    test_db.add_all([tx_ref, tx_exp, tx_inc])
+    test_db.commit()
+
+    inc, exp, sav = calculate_net_cash_flow(test_db, user.id, date(2026, 10, 1), date(2026, 10, 31))
+    assert inc == 1000000
+    assert exp == 200000  # 500,000 - 300,000 = 200,000
+    assert sav == 800000  # 1,000,000 - 200,000 = 800,000
+
+
+

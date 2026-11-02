@@ -2,7 +2,7 @@ from typing import Optional, List
 from datetime import date
 from math import ceil
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from backend.app.database import get_db
@@ -73,7 +73,13 @@ def list_transactions(
     total_pages = ceil(total_records / limit) if total_records > 0 else 1
     offset = (page - 1) * limit
 
-    items = query.offset(offset).limit(limit).all()
+    items = (
+        query
+        .options(joinedload(Transaction.category), joinedload(Transaction.account))
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
     # Hydrate category_name & account_name
     results = []
@@ -160,6 +166,26 @@ def update_transaction(
             detail={"code": "TRANSACTION_NOT_FOUND", "message": "Transaction not found"}
         )
 
+    # Transfer-specific hardening: keep two-legged consistency
+    companion_leg = None
+    if tx.transfer_group_id:
+        if payload.transaction_type is not None and payload.transaction_type != "transfer":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "IMMUTABLE_TRANSFER_TYPE", "message": "Cannot convert an atomic transfer leg into an ordinary transaction. Delete the transfer instead."}
+            )
+        companion_leg = db.query(Transaction).filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transfer_group_id == tx.transfer_group_id,
+            Transaction.id != tx.id
+        ).first()
+
+    if tx.transaction_type != "transfer" and payload.transaction_type == "transfer":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "INVALID_TRANSACTION_TYPE", "message": "Transfers must be recorded via POST /api/v1/transactions/transfers to preserve double-entry balance."}
+        )
+
     if payload.account_id is not None:
         target_acc = db.query(Account).filter(Account.id == payload.account_id, Account.user_id == current_user.id).first()
         if not target_acc:
@@ -167,29 +193,42 @@ def update_transaction(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={"code": "ACCOUNT_NOT_FOUND", "message": "Target account not found"}
             )
+        if companion_leg and companion_leg.account_id == payload.account_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "IDENTICAL_ACCOUNTS", "message": "Source and destination accounts must be different"}
+            )
         tx.account_id = payload.account_id
 
     if payload.category_id is not None:
         target_cat = db.query(Category).filter(
             Category.id == payload.category_id,
-            (Category.user_id == current_user.id) | (Category.user_id == None)
+            (Category.user_id == current_user.id) | (Category.user_id.is_(None))
         ).first()
         if not target_cat:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "CATEGORY_NOT_FOUND", "message": "Target category not found"}
+                detail={"code": "CATEGORY_NOT_FOUND", "message": "Target category not found or access denied"}
             )
         tx.category_id = payload.category_id
-    if payload.transaction_type is not None:
+
+    if payload.transaction_type is not None and not tx.transfer_group_id:
         tx.transaction_type = payload.transaction_type
+
     if payload.amount_minor is not None:
         tx.amount_minor = payload.amount_minor
+        if companion_leg:
+            companion_leg.amount_minor = payload.amount_minor
+
+    if payload.transaction_date is not None:
+        tx.transaction_date = payload.transaction_date
+        if companion_leg:
+            companion_leg.transaction_date = payload.transaction_date
+
     if payload.merchant is not None:
         tx.merchant = payload.merchant
     if payload.description is not None:
         tx.description = payload.description
-    if payload.transaction_date is not None:
-        tx.transaction_date = payload.transaction_date
     if payload.payment_method is not None:
         tx.payment_method = payload.payment_method
     if payload.notes is not None:

@@ -36,30 +36,88 @@ def calculate_account_balance(db: Session, account_id: int) -> int:
 
     balance = account.opening_balance_minor
 
-    # Credit/Debit transactions for this account
-    txs = db.query(Transaction).filter(Transaction.account_id == account_id).all()
-    for tx in txs:
-        if tx.transaction_type == "income":
-            balance += tx.amount_minor
-        elif tx.transaction_type == "expense":
-            balance -= tx.amount_minor
-        elif tx.transaction_type == "refund":
-            balance += tx.amount_minor
-        elif tx.transaction_type == "transfer":
-            # Deterministic transfer direction:
-            # Credit leg (inflow) if tagged with transfer_in, or merchant/description indicates 'from'
-            is_inflow = (
-                (tx.notes and "transfer_in" in tx.notes.lower())
-                or (tx.merchant and "from" in tx.merchant.lower())
-                or (tx.description and "from" in tx.description.lower())
-            )
-            if is_inflow:
-                balance += tx.amount_minor
-            else:
-                balance -= tx.amount_minor
+    # Scalar projection avoids hydrating complete ORM mapped instances
+    txs = db.query(
+        Transaction.transaction_type,
+        Transaction.amount_minor,
+        Transaction.notes,
+        Transaction.merchant,
+        Transaction.description
+    ).filter(Transaction.account_id == account_id).all()
 
+    for tx_type, amount, notes, merchant, desc in txs:
+        if tx_type == "income":
+            balance += amount
+        elif tx_type == "expense":
+            balance -= amount
+        elif tx_type == "refund":
+            balance += amount
+        elif tx_type == "transfer":
+            if notes and "transfer_out" in notes.lower():
+                is_inflow = False
+            elif notes and "transfer_in" in notes.lower():
+                is_inflow = True
+            else:
+                is_inflow = (
+                    (merchant and "from" in merchant.lower())
+                    or (desc and "from" in desc.lower())
+                )
+            if is_inflow:
+                balance += amount
+            else:
+                balance -= amount
 
     return balance
+
+
+def calculate_account_balances_for_user(db: Session, user_id: int) -> Dict[int, int]:
+    """
+    Batch-calculate real-time account balances in paise for ALL accounts belonging to a user
+    in a single, high-efficiency pass (eliminating N+1 query patterns).
+    """
+    accounts = db.query(Account).filter(Account.user_id == user_id).all()
+    balances = {acc.id: acc.opening_balance_minor for acc in accounts}
+    if not balances:
+        return {}
+
+    tx_rows = (
+        db.query(
+            Transaction.account_id,
+            Transaction.transaction_type,
+            Transaction.amount_minor,
+            Transaction.notes,
+            Transaction.merchant,
+            Transaction.description
+        )
+        .filter(Transaction.user_id == user_id)
+        .all()
+    )
+
+    for acc_id, tx_type, amount, notes, merchant, desc in tx_rows:
+        if acc_id not in balances:
+            continue
+        if tx_type == "income":
+            balances[acc_id] += amount
+        elif tx_type == "expense":
+            balances[acc_id] -= amount
+        elif tx_type == "refund":
+            balances[acc_id] += amount
+        elif tx_type == "transfer":
+            if notes and "transfer_out" in notes.lower():
+                is_inflow = False
+            elif notes and "transfer_in" in notes.lower():
+                is_inflow = True
+            else:
+                is_inflow = (
+                    (merchant and "from" in merchant.lower())
+                    or (desc and "from" in desc.lower())
+                )
+            if is_inflow:
+                balances[acc_id] += amount
+            else:
+                balances[acc_id] -= amount
+
+    return balances
 
 
 def calculate_liquid_assets(db: Session, user_id: int) -> int:
@@ -67,6 +125,7 @@ def calculate_liquid_assets(db: Session, user_id: int) -> int:
     Calculate total liquid assets (positive balances of bank, wallet, cash accounts).
     Excludes credit card liabilities and reserve / emergency funds.
     """
+    balances = calculate_account_balances_for_user(db, user_id)
     liquid_accounts = db.query(Account).filter(
         Account.user_id == user_id,
         Account.is_active == True,
@@ -76,7 +135,7 @@ def calculate_liquid_assets(db: Session, user_id: int) -> int:
 
     total_liquidity = 0
     for acc in liquid_accounts:
-        bal = calculate_account_balance(db, acc.id)
+        bal = balances.get(acc.id, 0)
         if bal > 0:
             total_liquidity += bal
 
@@ -87,6 +146,7 @@ def calculate_credit_card_liabilities(db: Session, user_id: int) -> int:
     """
     Calculate outstanding credit card liabilities (strictly positive debt representation in paise).
     """
+    balances = calculate_account_balances_for_user(db, user_id)
     card_accounts = db.query(Account).filter(
         Account.user_id == user_id,
         Account.is_active == True,
@@ -95,8 +155,7 @@ def calculate_credit_card_liabilities(db: Session, user_id: int) -> int:
 
     total_liability = 0
     for acc in card_accounts:
-        bal = calculate_account_balance(db, acc.id)
-        # If balance is negative, liability is abs(balance)
+        bal = balances.get(acc.id, 0)
         if bal < 0:
             total_liability += abs(bal)
 
@@ -122,17 +181,19 @@ def calculate_net_cash_flow(
     ).all()
 
     total_income = 0
-    total_expense = 0
+    gross_expense = 0
+    total_refund = 0
 
     for tx in txs:
         if tx.transaction_type == "income":
             total_income += tx.amount_minor
         elif tx.transaction_type == "expense":
-            total_expense += tx.amount_minor
+            gross_expense += tx.amount_minor
         elif tx.transaction_type == "refund":
-            # Refund reduces overall consumption expense
-            total_expense = max(0, total_expense - tx.amount_minor)
+            total_refund += tx.amount_minor
 
+    # Netting refunds across the period is order-invariant and mathematically exact
+    total_expense = max(0, gross_expense - total_refund)
     net_savings = total_income - total_expense
     return total_income, total_expense, net_savings
 
@@ -206,10 +267,11 @@ def calculate_budget_performance(
         allocated = alloc.allocated_amount_minor
         total_allocated += allocated
 
-        # Query qualifying expense transactions in this category within budget dates
-        spent = (
+        # Query qualifying net expenses (expenses minus refunds) in this category within budget dates
+        expenses = (
             db.query(func.coalesce(func.sum(Transaction.amount_minor), 0))
             .filter(
+                Transaction.user_id == budget.user_id,
                 Transaction.category_id == alloc.category_id,
                 Transaction.transaction_date >= budget.start_date,
                 Transaction.transaction_date <= budget.end_date,
@@ -217,6 +279,18 @@ def calculate_budget_performance(
             )
             .scalar()
         )
+        refunds = (
+            db.query(func.coalesce(func.sum(Transaction.amount_minor), 0))
+            .filter(
+                Transaction.user_id == budget.user_id,
+                Transaction.category_id == alloc.category_id,
+                Transaction.transaction_date >= budget.start_date,
+                Transaction.transaction_date <= budget.end_date,
+                Transaction.transaction_type == "refund"
+            )
+            .scalar()
+        )
+        spent = max(0, int(expenses) - int(refunds))
         total_spent += spent
 
         remaining = max(0, allocated - spent)

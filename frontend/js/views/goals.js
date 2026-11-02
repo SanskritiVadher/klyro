@@ -8,6 +8,7 @@ import { store } from '../state.js';
 import { formatINR, formatDate, parseRupeesToPaise } from '../utils/formatters.js';
 import { renderCardSkeleton, renderErrorBanner, renderEmptyState } from '../components/loading.js';
 import { showToast } from '../components/toast.js';
+import { renderMascot } from '../components/mascot.js';
 import { animateProgressRing, burstCelebration, fireConfetti, init3DTilt } from '../utils/animate.js';
 
 function getGoalEmoji(name = '') {
@@ -118,15 +119,20 @@ export async function renderGoalsView(container) {
 
                         <!-- Card Footer -->
                         <div class="border-t border-[#F6F3EB] pt-3 flex flex-wrap items-center justify-between text-xs text-[#78716C] gap-2">
-                          <span class="font-medium text-[#1C1917]">
-                            ${
-                              isAchieved
-                                ? 'Target reached!'
-                                : goal.projected_completion_date
-                                ? `Projected: ${formatDate(goal.projected_completion_date)}`
-                                : `Target: ${formatDate(goal.target_date)}`
-                            }
-                          </span>
+                          <div class="flex items-center gap-2">
+                            <span class="shrink-0" title="${isAchieved ? 'Kly celebrating your achievement!' : 'Kly encouraging your progress!'}">
+                              ${renderMascot(isAchieved ? 'celebrating' : 'encouraging', 'w-7 h-7')}
+                            </span>
+                            <span class="font-medium text-[#1C1917]">
+                              ${
+                                isAchieved
+                                  ? 'Target reached!'
+                                  : goal.projected_completion_date
+                                  ? `Projected: ${formatDate(goal.projected_completion_date)}`
+                                  : `Target: ${formatDate(goal.target_date)}`
+                              }
+                            </span>
+                          </div>
                           <button data-goal-id="${goal.id}" data-goal-name="${goal.name}" class="contribute-goal-btn btn btn-secondary text-xs">
                             + Contribute
                           </button>
@@ -324,8 +330,26 @@ export async function renderGoalsView(container) {
           burstCelebration(cardEl);
           fireConfetti({ particleCount: 90, spread: 80, origin: { y: 0.55 } });
           showToast(`Target Reached! Goal "${targetGoal.name}" is 100% achieved! 🎉`, 'success');
+          if (window.KYLRO_OWL) {
+            const goalMsg = `You did it! You saved enough for ${targetGoal.name}. That's a big win.`;
+            if (typeof window.KYLRO_OWL.celebrateAchievement === 'function') {
+              window.KYLRO_OWL.celebrateAchievement(goalMsg);
+            } else {
+              window.KYLRO_OWL.setPose('celebrating');
+              window.KYLRO_OWL.speak(goalMsg, 4500);
+            }
+          }
         } else {
           showToast(`Contribution of ₹${(minor / 100).toFixed(2)} recorded!`, 'success');
+          if (window.KYLRO_OWL) {
+            const newTotalPaise = (targetGoal?.current_amount_minor || 0) + (type === 'deposit' ? minor : -minor);
+            const savedStr = Math.round(newTotalPaise / 100).toLocaleString('en-IN');
+            const targetPaise = targetGoal?.target_amount_minor || 1;
+            const percent = Math.min(100, Math.round((newTotalPaise / targetPaise) * 100));
+            const progressMsg = `Nice! You've saved ₹${savedStr} so far. You're ${percent}% of the way there.`;
+            window.KYLRO_OWL.setPose('encouraging');
+            window.KYLRO_OWL.speak(progressMsg, 3500);
+          }
         }
 
         store.setState({ lastUpdated: Date.now() });

@@ -6,6 +6,16 @@
   <title>Klyro — Clarity you can act on.</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231C1917'/><text x='16' y='22' font-size='18' font-weight='bold' font-family='serif' fill='%23FAF8F5' text-anchor='middle'>K</text></svg>">
 
+  <!-- Zero-Flash Theme Initialization Script (Sunrise / Sunset) -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('klyro_theme') || 'sunrise';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -52,15 +62,15 @@
   <!-- Custom Editorial Theme Stylesheet -->
   <link rel="stylesheet" href="/static/css/editorial-theme.css">
 </head>
-<body class="bg-[#FBF9F5] text-[#1C1917] flex h-screen overflow-hidden selection:bg-[#FCD34D] selection:text-black">
+<body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] flex h-screen overflow-hidden selection:bg-[#FCD34D] selection:text-black">
 
   <!-- Desktop Navigation Rail (Left Fixed - Authenticated Only) -->
-  <aside id="app-sidebar" class="hidden md:flex flex-col w-64 bg-[#F6F3EB] border-r border-[#E6E1D6] h-full justify-between select-none p-4 z-20">
+  <aside id="app-sidebar" class="hidden md:flex flex-col w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-subtle)] h-full justify-between select-none p-4 z-20">
     <div class="space-y-6">
       <!-- Klyro Brand Header -->
       <div class="px-3 pt-2">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-[#1C1917] text-[#FAF8F5] flex items-center justify-center shadow-xs border border-[#292524] shrink-0" aria-label="Klyro App Icon">
+        <div id="sidebar-brand-btn" data-brand-logo class="flex items-center gap-3 cursor-pointer group hover:opacity-95 transition-all" title="Play Klyro Animated Logo Intro">
+          <div class="w-9 h-9 rounded-lg bg-[#1C1917] text-[#FAF8F5] flex items-center justify-center shadow-xs border border-[#292524] shrink-0 group-hover:scale-105 transition-transform" aria-label="Klyro App Icon">
             <!-- Sleek Geometric Klyro App Icon -->
             <svg class="w-5 h-5 text-[#FAF8F5]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M6 4V20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
@@ -154,6 +164,10 @@
           </div>
         </div>
         <div class="flex items-center gap-1 shrink-0">
+          <button type="button" data-theme-toggle class="p-1.5 text-[#78716C] hover:text-[#1C1917] rounded hover:bg-[#EFEBE0] transition-colors" title="Toggle Theme (Sunrise / Sunset)" aria-label="Toggle Theme">
+            <span class="theme-icon-sunrise">🌅</span>
+            <span class="theme-icon-sunset hidden">🌇</span>
+          </button>
           <button id="keyboard-help-btn" title="Keyboard Shortcuts (?)" class="p-1.5 text-[#78716C] hover:text-[#1C1917] rounded hover:bg-[#EFEBE0]">
             <span class="font-mono text-xs px-1 py-0.5 border border-[#D5CEBF] rounded bg-white">?</span>
           </button>
@@ -171,9 +185,9 @@
   <div class="flex-1 flex flex-col h-full overflow-hidden">
     
     <!-- Public Navigation Bar (Visible when Unauthenticated) -->
-    <header id="public-nav" class="hidden h-16 border-b border-[#E6E1D6] bg-white px-4 sm:px-8 items-center justify-between shrink-0 z-30">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-[#1C1917] text-[#FAF8F5] flex items-center justify-center shadow-xs shrink-0">
+    <header id="public-nav" class="hidden h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-header)] px-4 sm:px-8 items-center justify-between shrink-0 z-30">
+      <div id="public-brand-logo" data-brand-logo class="flex items-center gap-3 cursor-pointer group hover:opacity-95 transition-all" title="Play Klyro Animated Logo Intro">
+        <div class="w-9 h-9 rounded-lg bg-[#1C1917] text-[#FAF8F5] flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
           <svg class="w-5 h-5 text-[#FAF8F5]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 4V20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
             <path d="M18 4.5L8 12L18.5 19.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -187,13 +201,28 @@
         </div>
       </div>
       <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Accessible Theme Switcher (Sunrise / Sunset) -->
+        <button type="button" data-theme-toggle class="theme-toggle-btn" aria-label="Toggle theme">
+          <span class="theme-icon-sunrise flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-[#D97706]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span class="hidden sm:inline font-medium">Sunrise</span>
+          </span>
+          <span class="theme-icon-sunset hidden flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-[#F59E0B]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            <span class="hidden sm:inline font-medium">Sunset</span>
+          </span>
+        </button>
         <button id="public-login-btn" class="btn btn-secondary text-xs px-3.5 py-1.5">Sign In</button>
         <button id="public-register-btn" class="btn btn-coral text-xs px-4 py-1.5">Get Started</button>
       </div>
     </header>
 
     <!-- Top Action Bar (Authenticated Only) -->
-    <header id="app-header" class="h-16 border-b border-[#E6E1D6] bg-[#FFFFFF] px-3 sm:px-6 flex items-center justify-between shrink-0 z-10">
+    <header id="app-header" class="h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-header)] px-3 sm:px-6 flex items-center justify-between shrink-0 z-10">
       <div class="flex items-center gap-2 sm:gap-4 overflow-hidden">
         <!-- Mobile Menu Trigger -->
         <button id="mobile-menu-btn" class="md:hidden p-1.5 text-[#1C1917] hover:bg-[#F6F3EB] rounded-lg shrink-0">
@@ -209,6 +238,22 @@
       <!-- Center & Right Utility Controls -->
       <div class="flex items-center gap-2 sm:gap-3 shrink-0">
         
+        <!-- Accessible Theme Switcher (Sunrise / Sunset) -->
+        <button type="button" data-theme-toggle class="theme-toggle-btn" aria-label="Toggle theme" title="Switch Theme (Sunrise / Sunset)">
+          <span class="theme-icon-sunrise flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-[#D97706]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span class="hidden sm:inline font-medium">Sunrise</span>
+          </span>
+          <span class="theme-icon-sunset hidden flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-[#F59E0B]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            <span class="hidden sm:inline font-medium">Sunset</span>
+          </span>
+        </button>
+
         <!-- Global Period Navigator -->
         <div class="flex items-center bg-[#F6F3EB] border border-[#E6E1D6] rounded-lg p-0.5 shadow-sm">
           <button id="prev-period-btn" class="p-1 sm:p-1.5 text-[#78716C] hover:text-[#1C1917] hover:bg-[#EFEBE0] rounded transition-colors" title="Previous Month">
@@ -246,7 +291,7 @@
     </header>
 
     <!-- Dynamic Canvas / Viewport with Animated Gradient-Blob Background -->
-    <div class="flex-1 relative overflow-hidden flex flex-col bg-[#FBF9F5]">
+    <div class="flex-1 relative overflow-hidden flex flex-col bg-[var(--bg-canvas)]">
       <!-- Animated Gradient Blobs (Coral, Sage, Warm Amber) -->
       <div class="ambient-blob-stage pointer-events-none absolute inset-0 overflow-hidden z-0" aria-hidden="true">
         <div class="ambient-blob blob-coral"></div>
@@ -261,7 +306,7 @@
   </div>
 
   <!-- Mobile Bottom Navigation Bar (Authenticated Only) -->
-  <nav id="app-mobile-nav" class="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-[#E6E1D6] flex justify-around py-2 px-1 z-30 shadow-lg">
+  <nav id="app-mobile-nav" class="md:hidden fixed bottom-0 inset-x-0 bg-[var(--bg-header)] border-t border-[var(--border-subtle)] flex justify-around py-2 px-1 z-30 shadow-lg">
     <a href="#home" data-route="home" class="flex flex-col items-center text-xs text-[#78716C] p-1.5 active:text-[#D45644]">
       <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
@@ -371,6 +416,6 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Application Bootstrap JS -->
-  <script type="module" src="/static/js/app.js"></script>
+  <script type="module" src="/static/js/app.js?v=2.1"></script>
 </body>
 </html>

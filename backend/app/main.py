@@ -28,6 +28,18 @@ app.add_middleware(
 )
 
 
+# Development Cache-Control Middleware for Frontend Static Assets
+@app.middleware("http")
+async def dev_static_cache_middleware(request: Request, call_next):
+    response = await call_next(request)
+    if settings.APP_ENV == "development" or settings.DEBUG:
+        path = request.url.path
+        if path.startswith("/static") or path in ("/", "/index.html"):
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+    return response
+
+
 # Unified Error Formatting Exception Handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

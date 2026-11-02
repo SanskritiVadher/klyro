@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from backend.app.database import get_db
 from backend.app.models import User, Transaction, Budget
@@ -84,9 +84,10 @@ def get_dashboard_summary(
     # 4. What Changed?
     what_changed = generate_what_changed_summary(db, current_user.id, start_date)
 
-    # 5. Recent 5 Transactions
+    # 5. Recent 5 Transactions (eagerly load category and account to avoid N+1 queries)
     recent_txs = (
         db.query(Transaction)
+        .options(joinedload(Transaction.category), joinedload(Transaction.account))
         .filter(Transaction.user_id == current_user.id)
         .order_by(Transaction.transaction_date.desc(), Transaction.id.desc())
         .limit(5)

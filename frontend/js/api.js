@@ -50,9 +50,18 @@ class ApiClient {
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
+        let fallbackMessage = 'An unexpected error occurred while communicating with the server.';
+        if (response.status === 409) {
+          fallbackMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (response.status === 404) {
+          fallbackMessage = 'API endpoint not found. Please check backend server routing.';
+        } else if (response.status >= 500) {
+          fallbackMessage = `Server encountered an internal error (HTTP ${response.status}). Please check local server logs.`;
+        }
+
         const errObj = data?.error || {
           code: `HTTP_${response.status}`,
-          message: data?.detail || 'An unexpected error occurred while communicating with the server.',
+          message: data?.detail || fallbackMessage,
         };
 
         // Handle expired / unauthorized token automatically
@@ -63,7 +72,7 @@ class ApiClient {
           }));
         }
 
-        const error = new Error(errObj.message || 'API Error');
+        const error = new Error(errObj.message || fallbackMessage);
         error.code = errObj.code;
         error.details = errObj.details;
         error.status = response.status;
@@ -72,6 +81,12 @@ class ApiClient {
 
       return data;
     } catch (err) {
+      if (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('NetworkError'))) {
+        const networkError = new Error('Cannot reach Klyro backend at http://127.0.0.1:8081. Please ensure the local server is running.');
+        networkError.code = 'NETWORK_OFFLINE';
+        console.error(`[API Error] ${options.method || 'GET'} ${endpoint}:`, networkError);
+        throw networkError;
+      }
       console.error(`[API Error] ${options.method || 'GET'} ${endpoint}:`, err);
       throw err;
     }

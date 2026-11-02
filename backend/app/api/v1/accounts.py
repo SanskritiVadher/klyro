@@ -6,7 +6,7 @@ from backend.app.database import get_db
 from backend.app.models import Account, User, Transaction
 from backend.app.schemas import AccountCreate, AccountUpdate, AccountAdjustmentCreate, AccountResponse
 from backend.app.api.v1.auth import get_current_user
-from backend.app.services.calculation_engine import calculate_account_balance
+from backend.app.services.calculation_engine import calculate_account_balance, calculate_account_balances_for_user
 from datetime import date
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
@@ -16,10 +16,11 @@ router = APIRouter(prefix="/accounts", tags=["Accounts"])
 def list_accounts(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """List all accounts for the user with computed real-time balances in paise."""
     accounts = db.query(Account).filter(Account.user_id == current_user.id).all()
+    balances = calculate_account_balances_for_user(db, current_user.id)
     results = []
     for acc in accounts:
         resp = AccountResponse.model_validate(acc)
-        resp.current_balance_minor = calculate_account_balance(db, acc.id)
+        resp.current_balance_minor = balances.get(acc.id, acc.opening_balance_minor)
         results.append(resp)
     return results
 

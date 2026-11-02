@@ -48,7 +48,19 @@ def _discretionary_position(
         )
         .scalar()
     )
-    return int(spent), None
+    refunds = (
+        db.query(func.coalesce(func.sum(Transaction.amount_minor), 0))
+        .filter(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == "refund",
+            Transaction.recurring_rule_id.is_(None),
+            Transaction.transaction_date >= period_start,
+            Transaction.transaction_date <= ref_date,
+        )
+        .scalar()
+    )
+    net_spent = max(0, int(spent) - int(refunds))
+    return net_spent, None
 
 
 def evaluate_money_weather(

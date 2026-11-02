@@ -797,5 +797,228 @@ def test_transaction_recording_account_selection_and_transfers_e2e():
     assert logout_res.status_code == 200
 
 
+def test_phase4_transfer_editing_and_atomic_companion_sync():
+    """Verify Phase 4 Task 1 & 2: Updating a transfer leg updates companion leg atomically."""
+    # 1. Register a test user
+    u_res = client.post("/api/v1/auth/register", json={
+        "name": "Transfer Audit User",
+        "email": "transfer_audit@klyro.finance",
+        "password": "Password123!",
+    })
+    token = create_access_token(subject=u_res.json()["id"])
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 2. Create source and destination accounts
+    acc_src = client.post("/api/v1/accounts", headers=headers, json={
+        "name": "Audit Source",
+        "account_type": "bank",
+        "opening_balance_minor": 1000000,  # ₹10,000.00
+    }).json()
+    acc_dst = client.post("/api/v1/accounts", headers=headers, json={
+        "name": "Audit Destination",
+        "account_type": "wallet",
+        "opening_balance_minor": 200000,   # ₹2,000.00
+    }).json()
+
+    # 3. Create transfer of ₹3,000.00 (300000 paise)
+    transfer_res = client.post("/api/v1/transactions/transfers", headers=headers, json={
+        "from_account_id": acc_src["id"],
+        "to_account_id": acc_dst["id"],
+        "amount_minor": 300000,
+        "transaction_date": "2026-10-25",
+        "description": "Initial Transfer",
+    })
+    assert transfer_res.status_code == 201
+    legs = transfer_res.json()
+    leg1_id, leg2_id = legs[0]["id"], legs[1]["id"]
+
+    # Verify initial balances: source = 7,000, dst = 5,000
+    acc_src_bal = client.get(f"/api/v1/accounts/{acc_src['id']}", headers=headers).json()
+    acc_dst_bal = client.get(f"/api/v1/accounts/{acc_dst['id']}", headers=headers).json()
+    assert acc_src_bal["current_balance_minor"] == 700000
+    assert acc_dst_bal["current_balance_minor"] == 500000
+
+    # 4. Update leg 1 amount to ₹4,000.00 (400000 paise)
+    patch_res = client.patch(f"/api/v1/transactions/{leg1_id}", headers=headers, json={
+        "amount_minor": 400000
+    })
+    assert patch_res.status_code == 200
+
+    # Verify companion leg 2 was also atomically updated
+    leg2_get = client.get(f"/api/v1/transactions/{leg2_id}", headers=headers).json()
+    assert leg2_get["amount_minor"] == 400000
+
+    # Verify balances updated to reflect ₹4,000 transfer: source = 6,000, dst = 6,000
+    acc_src_bal2 = client.get(f"/api/v1/accounts/{acc_src['id']}", headers=headers).json()
+    acc_dst_bal2 = client.get(f"/api/v1/accounts/{acc_dst['id']}", headers=headers).json()
+    assert acc_src_bal2["current_balance_minor"] == 600000
+    assert acc_dst_bal2["current_balance_minor"] == 600000
+
+    # 5. Delete transfer leg -> deletes both legs atomically
+    del_res = client.delete(f"/api/v1/transactions/{leg1_id}", headers=headers)
+    assert del_res.status_code == 204
+    # Both legs must be gone
+    assert client.get(f"/api/v1/transactions/{leg1_id}", headers=headers).status_code == 404
+    assert client.get(f"/api/v1/transactions/{leg2_id}", headers=headers).status_code == 404
+
+    # Balances restored to opening values
+    acc_src_bal3 = client.get(f"/api/v1/accounts/{acc_src['id']}", headers=headers).json()
+    acc_dst_bal3 = client.get(f"/api/v1/accounts/{acc_dst['id']}", headers=headers).json()
+    assert acc_src_bal3["current_balance_minor"] == 1000000
+    assert acc_dst_bal3["current_balance_minor"] == 200000
+
+
+def test_phase4_transfer_type_immutability_and_single_leg_rejection():
+    """Verify Phase 4 Task 2 & 3: Cannot change transfer type or create one-sided transfer."""
+    u_res = client.post("/api/v1/auth/register", json={
+        "name": "Transfer Immutability User",
+        "email": "immutability@klyro.finance",
+        "password": "Password123!",
+    })
+    token = create_access_token(subject=u_res.json()["id"])
+    headers = {"Authorization": f"Bearer {token}"}
+
+    acc1 = client.post("/api/v1/accounts", headers=headers, json={
+        "name": "Acc 1",
+        "account_type": "bank",
+        "opening_balance_minor": 500000,
+    }).json()
+    acc2 = client.post("/api/v1/accounts", headers=headers, json={
+        "name": "Acc 2",
+        "account_type": "cash",
+        "opening_balance_minor": 100000,
+    }).json()
+
+    # Attempting to create a "transfer" via POST /transactions must be rejected
+    single_transfer = client.post("/api/v1/transactions", headers=headers, json={
+        "account_id": acc1["id"],
+        "transaction_type": "transfer",
+        "amount_minor": 10000,
+        "transaction_date": "2026-10-25",
+    })
+    assert single_transfer.status_code == 400
+    assert single_transfer.json()["error"]["code"] == "INVALID_TRANSACTION_TYPE"
+
+    # Create real transfer
+    txs = client.post("/api/v1/transactions/transfers", headers=headers, json={
+        "from_account_id": acc1["id"],
+        "to_account_id": acc2["id"],
+        "amount_minor": 50000,
+        "transaction_date": "2026-10-25",
+    }).json()
+
+    # Attempting to mutate transfer leg to "expense" must be rejected
+    bad_mutate = client.patch(f"/api/v1/transactions/{txs[0]['id']}", headers=headers, json={
+        "transaction_type": "expense"
+    })
+    assert bad_mutate.status_code == 400
+    assert bad_mutate.json()["error"]["code"] == "IMMUTABLE_TRANSFER_TYPE"
+
+
+def test_phase4_transfer_idempotency_via_transfer_group_id():
+    """Verify Phase 4 Task 2: Submitting with same transfer_group_id returns existing transfer."""
+    u_res = client.post("/api/v1/auth/register", json={
+        "name": "Idempotent User",
+        "email": "idempotent@klyro.finance",
+        "password": "Password123!",
+    })
+    token = create_access_token(subject=u_res.json()["id"])
+    headers = {"Authorization": f"Bearer {token}"}
+
+    acc1 = client.post("/api/v1/accounts", headers=headers, json={
+        "name": "Bank Alpha",
+        "account_type": "bank",
+        "opening_balance_minor": 500000,
+    }).json()
+    acc2 = client.post("/api/v1/accounts", headers=headers, json={
+        "name": "Bank Beta",
+        "account_type": "bank",
+        "opening_balance_minor": 500000,
+    }).json()
+
+    payload = {
+        "from_account_id": acc1["id"],
+        "to_account_id": acc2["id"],
+        "amount_minor": 150000,
+        "transaction_date": "2026-10-25",
+        "transfer_group_id": "test-idempotency-key-12345",
+    }
+
+    # First attempt
+    res1 = client.post("/api/v1/transactions/transfers", headers=headers, json=payload)
+    assert res1.status_code == 201
+    legs1 = res1.json()
+
+    # Second attempt (network retry simulation)
+    res2 = client.post("/api/v1/transactions/transfers", headers=headers, json=payload)
+    assert res2.status_code == 201
+    legs2 = res2.json()
+
+    # Returned transfer IDs must match (no duplicates created!)
+    assert legs1[0]["id"] == legs2[0]["id"]
+    assert legs1[1]["id"] == legs2[1]["id"]
+
+    # Verify balance was only deducted once
+    bal1 = client.get(f"/api/v1/accounts/{acc1['id']}", headers=headers).json()
+    assert bal1["current_balance_minor"] == 350000  # 500,000 - 150,000 = 350,000
+
+
+def test_phase4_validation_bounds_and_cross_user_category_isolation():
+    """Verify Phase 4 Task 3: Out-of-bounds amounts, dates, and cross-user category access are rejected."""
+    # User A
+    uA = client.post("/api/v1/auth/register", json={
+        "name": "User A", "email": "userA@klyro.finance", "password": "Password123!"
+    }).json()
+    tokA = create_access_token(subject=uA["id"])
+    hdrA = {"Authorization": f"Bearer {tokA}"}
+
+    accA = client.post("/api/v1/accounts", headers=hdrA, json={
+        "name": "User A Acc", "account_type": "bank", "opening_balance_minor": 100000
+    }).json()
+
+    # User B
+    uB = client.post("/api/v1/auth/register", json={
+        "name": "User B", "email": "userB@klyro.finance", "password": "Password123!"
+    }).json()
+    tokB = create_access_token(subject=uB["id"])
+    hdrB = {"Authorization": f"Bearer {tokB}"}
+
+    catB = client.post("/api/v1/categories", headers=hdrB, json={
+        "name": "User B Secret Category", "category_type": "expense", "color_token": "sage"
+    }).json()
+
+    # 1. User A tries to use User B's custom category -> 404
+    bad_cat_res = client.post("/api/v1/transactions", headers=hdrA, json={
+        "account_id": accA["id"],
+        "category_id": catB["id"],
+        "transaction_type": "expense",
+        "amount_minor": 5000,
+        "transaction_date": "2026-10-25",
+    })
+    assert bad_cat_res.status_code == 404
+    assert bad_cat_res.json()["error"]["code"] == "CATEGORY_NOT_FOUND"
+
+    # 2. Excessively large amount (> ₹10 Crore) -> 422 Validation Error
+    too_large_res = client.post("/api/v1/transactions", headers=hdrA, json={
+        "account_id": accA["id"],
+        "transaction_type": "expense",
+        "amount_minor": 999_999_999_999,
+        "transaction_date": "2026-10-25",
+    })
+    assert too_large_res.status_code == 422
+    assert too_large_res.json()["error"]["code"] == "VALIDATION_ERROR"
+
+    # 3. Absurd date year (< 2000) -> 422 Validation Error
+    bad_date_res = client.post("/api/v1/transactions", headers=hdrA, json={
+        "account_id": accA["id"],
+        "transaction_type": "expense",
+        "amount_minor": 1000,
+        "transaction_date": "1899-05-12",
+    })
+    assert bad_date_res.status_code == 422
+    assert bad_date_res.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+
 
 

@@ -164,7 +164,7 @@ export async function renderTransactionsView(container) {
                   `No records match the active criteria in ${label}. Try adjusting filters or record a new transaction.`,
                   '+ Record First Transaction',
                   "document.getElementById('quick-capture-btn')?.click()",
-                  '🧾'
+                  'thinking'
                 )
           }
         </div>
@@ -222,6 +222,14 @@ export async function renderTransactionsView(container) {
 
     requestAnimationFrame(() => {
       init3DTilt(container);
+      if (currentSearch) {
+        const reInput = container.querySelector('#tx-search-input');
+        if (reInput) {
+          reInput.focus();
+          const len = reInput.value.length;
+          reInput.setSelectionRange(len, len);
+        }
+      }
     });
 
     // --- Wire Events ---

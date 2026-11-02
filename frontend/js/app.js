@@ -6,8 +6,12 @@ import { store } from './state.js';
 import { router } from './router.js';
 import { api } from './api.js';
 import { showToast } from './components/toast.js';
+import { initThemeManager } from './theme.js';
 import { initQuickCaptureModal, openQuickCaptureModal } from './components/quick-capture-modal.js';
 import { initAuthModal, openAuthModal } from './components/auth-modal.js';
+import { renderMascot } from './components/mascot.js';
+import { playLogoIntroAnimation } from './components/logo-intro.js';
+import { persistentOwl } from './components/persistent-owl.js';
 
 import { renderWelcomeView } from './views/welcome.js';
 import { renderHomeView } from './views/home.js';
@@ -41,6 +45,9 @@ function updateUserProfileUI(user) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize Klyro Design System Theme Manager (Sunrise / Sunset)
+  initThemeManager();
+
   const container = document.getElementById('main-view-container');
   const periodLabel = document.getElementById('period-display-label');
   const quickCaptureModal = document.getElementById('quick-capture-modal');
@@ -140,6 +147,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     showToast(`Switched period to ${store.getPeriodRange().label}`);
   });
 
+  // Listen to theme changes to adapt charts reactively without wiping DOM or resetting view
+  window.addEventListener('klyro:theme-changed', (e) => {
+    const isSunset = e.detail?.theme === 'sunset';
+    if (typeof Chart !== 'undefined') {
+      const canvases = container?.querySelectorAll('canvas');
+      if (canvases && canvases.length > 0) {
+        canvases.forEach(c => {
+          const chart = Chart.getChart(c);
+          if (chart) {
+            const chartType = chart.config?.type;
+            const isRadial = ['doughnut', 'pie', 'polarArea', 'radar'].includes(chartType);
+
+            // Update cartesian scales only for bar / line / cartesian charts
+            if (!isRadial && chart.options?.scales) {
+              if (chart.options.scales.x?.grid) chart.options.scales.x.grid.color = isSunset ? '#332B24' : '#E6E1D6';
+              if (chart.options.scales.y?.grid) chart.options.scales.y.grid.color = isSunset ? '#332B24' : '#E6E1D6';
+              if (chart.options.scales.x?.ticks) chart.options.scales.x.ticks.color = isSunset ? '#9E9486' : '#78716C';
+              if (chart.options.scales.y?.ticks) chart.options.scales.y.ticks.color = isSunset ? '#9E9486' : '#78716C';
+            }
+
+            // Adapt tooltip theme for all chart types
+            if (chart.options?.plugins?.tooltip) {
+              chart.options.plugins.tooltip.backgroundColor = isSunset ? '#27211C' : '#1C1917';
+              chart.options.plugins.tooltip.titleColor = isSunset ? '#F8F4EC' : '#FAF8F5';
+              chart.options.plugins.tooltip.bodyColor = isSunset ? '#D6CEC3' : '#F6F3EB';
+              chart.options.plugins.tooltip.borderColor = isSunset ? '#473C32' : 'transparent';
+              chart.options.plugins.tooltip.borderWidth = isSunset ? 1 : 0;
+            }
+
+            // Adapt legend text color for all chart types
+            if (chart.options?.plugins?.legend?.labels) {
+              chart.options.plugins.legend.labels.color = isSunset ? '#D6CEC3' : '#44403C';
+            }
+
+            try {
+              chart.update('none');
+            } catch (err) {
+              console.warn('Chart update non-critical notice:', err);
+            }
+          }
+        });
+      }
+    }
+  });
+
   // Listen to transaction/transfer state updates to reload the active view automatically
   store.subscribe('lastUpdated', () => {
     router.handleHashChange();
@@ -204,7 +256,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize live Quick-Capture Modal controller
   initQuickCaptureModal();
 
-  console.log('Klyro Financial Intelligence Workspace initialized successfully.');
+  // Wire interactive replay of Klyro Logo Intro when clicking brand headers
+  const triggerLogoIntro = () => {
+    playLogoIntroAnimation({ force: true });
+  };
+  document.querySelectorAll('[data-brand-logo], #app-logo-btn, #sidebar-brand-btn, #public-brand-logo').forEach((el) => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', triggerLogoIntro);
+    el.setAttribute('title', 'Play Klyro Animated Logo Intro');
+  });
+
+  // Play introductory animation on first visit of session
+  playLogoIntroAnimation();
+
+  // Initialize Persistent Owl Companion ("Professor Kly")
+  persistentOwl.init();
+
+  // Expose mascot, companion, and logo intro helpers on window
+  window.KYLRO_OWL = {
+    companion: persistentOwl,
+    render: renderMascot,
+    playIntro: (force = true) => playLogoIntroAnimation({ force }),
+    setPose: (pose) => persistentOwl.setPose(pose),
+    speak: (text, opts) => persistentOwl.speak(text, typeof opts === 'number' ? { duration: opts } : opts),
+    speakText: (text) => persistentOwl.speakText(text),
+    toggleMute: () => persistentOwl.toggleMute(),
+    isMuted: () => persistentOwl.isMuted,
+    flyToElement: (el, opts) => persistentOwl.flyToElement(el, opts),
+    celebrateAchievement: (msg) => persistentOwl.celebrateAchievement(msg),
+    acknowledgeTransaction: (data) => persistentOwl.acknowledgeTransaction(data),
+  };
+  window.KLYRO_MASCOT = window.KYLRO_OWL; // Backward alias
+
+  console.log('KYLRO Financial Intelligence Workspace initialized successfully.');
 });
 
 
